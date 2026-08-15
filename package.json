@@ -6,9 +6,9 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@webfinance/dashboard",
-    "build": "npm run build --workspace=@webfinance/dashboard",
-    "lint": "npm run lint --workspace=@webfinance/dashboard",
+    "dev": "npm run dev --workspace=webfinance-dashboard",
+    "build": "npm run build --workspace=webfinance-dashboard",
+    "lint": "npm run lint --workspace=webfinance-dashboard",
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop",
     "supabase:reset": "npx supabase db reset",

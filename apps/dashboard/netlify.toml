@@ -1,7 +1,4 @@
-# Prefer building from apps/dashboard (see apps/dashboard/netlify.toml).
-# This root config is a fallback when deploying from the repo root.
 [build]
-  base = "apps/dashboard"
   command = "npm run build"
   publish = ".next"
 
