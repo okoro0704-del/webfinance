@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f3f6f4;
+  --panel: #ffffff;
+  --ink: #12151a;
+  --muted: #5b6470;
+  --brand: #1f6b4f;
+  --line: #d7e0da;
+}
+
+body {
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #dceee6 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #e8f0ec 0%, transparent 50%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+@layer components {
+  .panel {
+    @apply bg-white border border-[var(--line)] rounded-xl;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply btn border border-[var(--line)] bg-white text-ink-700 hover:bg-ink-50;
+  }
+  .input {
+    @apply w-full rounded-lg border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-ink-500;
+  }
+}

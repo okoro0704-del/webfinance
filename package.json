@@ -1,0 +1,20 @@
+{
+  "name": "webfinance-distributor-cp",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@webfinance/dashboard",
+    "build": "npm run build --workspace=@webfinance/dashboard",
+    "lint": "npm run lint --workspace=@webfinance/dashboard",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:reset": "npx supabase db reset",
+    "supabase:functions:serve": "npx supabase functions serve --env-file .env.local"
+  },
+  "devDependencies": {
+    "supabase": "^2.12.1"
+  }
+}

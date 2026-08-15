@@ -1,0 +1,24 @@
+# Next.js / Node
+node_modules/
+.next/
+.turbo/
+dist/
+out/
+
+# Env & secrets (never commit)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Supabase / OS
+.supabase/
+supabase/.temp/
+supabase/.branches/
+supabase/snippets/
+.DS_Store
+*.log
+Thumbs.db
+
+# Netlify
+.netlify/
