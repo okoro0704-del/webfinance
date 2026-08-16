@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AuthLayout } from "@/components/AuthLayout";
+import { BrandMark } from "@/components/BrandMark";
+import { PasswordField } from "@/components/PasswordField";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
@@ -50,99 +53,113 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="grid min-h-screen lg:grid-cols-2">
-      <section className="relative hidden overflow-hidden bg-ink-900 lg:flex lg:flex-col lg:justify-between lg:p-10">
-        <div
-          aria-hidden
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(600px 360px at 80% 20%, rgba(58,168,146,0.3), transparent 60%), linear-gradient(160deg, #0f1720, #166f5e)",
-          }}
-        />
-        <div className="relative">
-          <p className="font-display text-3xl font-semibold text-white">Webfinance</p>
-          <p className="mt-2 text-xs uppercase tracking-[0.18em] text-brand-200">
-            Partner onboarding
-          </p>
-        </div>
-        <div className="relative max-w-md">
-          <div className="section-rule bg-brand-300" />
-          <p className="mt-5 font-display text-4xl font-semibold leading-tight text-white">
-            Join the distributor network and deploy with confidence.
-          </p>
-        </div>
-      </section>
+    <AuthLayout
+      eyebrow="Partner onboarding"
+      headline="Create your distributor workspace and start provisioning."
+      points={[
+        "Manage Product A and Product B from one console",
+        "Track wallet balance and prepaid license pools",
+        "Accounts stay pending until platform activation",
+      ]}
+    >
+      <div className="mb-8 lg:hidden">
+        <BrandMark />
+      </div>
 
-      <section className="flex items-center justify-center px-4 py-12">
-        <form onSubmit={onSubmit} className="surface w-full max-w-md animate-rise rounded-xl p-7 shadow-soft md:p-8">
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-900">
-            Create account
-          </h1>
-          <p className="mt-2 text-sm text-ink-500">
-            Accounts start as pending until a platform admin activates them.
-          </p>
+      <form onSubmit={onSubmit} className="surface rounded-2xl p-6 shadow-soft sm:p-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700">
+          Get started
+        </p>
+        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-[2.1rem]">
+          Create your account
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-ink-500">
+          Set up your distributor profile. An admin will activate Deploy access.
+        </p>
 
-          <div className="mt-8 grid gap-4">
-            <div>
-              <label className="label" htmlFor="fullName">Full name</label>
-              <input
-                id="fullName"
-                className="input"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="company">Company</label>
-              <input
-                id="company"
-                className="input"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="email">Email</label>
-              <input
-                id="email"
-                className="input"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">Password</label>
-              <input
-                id="password"
-                className="input"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-              />
-            </div>
+        <div className="mt-8 grid gap-4">
+          <div>
+            <label className="label" htmlFor="fullName">
+              Full name
+            </label>
+            <input
+              id="fullName"
+              className="input"
+              autoComplete="name"
+              placeholder="Jordan Lee"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
           </div>
+          <div>
+            <label className="label" htmlFor="company">
+              Company name
+            </label>
+            <input
+              id="company"
+              className="input"
+              autoComplete="organization"
+              placeholder="Acme Distribution"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="email">
+              Work email
+            </label>
+            <input
+              id="email"
+              className="input"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <PasswordField
+            id="password"
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            minLength={8}
+          />
+          <p className="text-xs text-ink-400">Use at least 8 characters.</p>
+        </div>
 
-          {error ? <p className="mt-4 text-sm text-signal-bad">{error}</p> : null}
+        {error ? (
+          <div
+            role="alert"
+            className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-signal-bad"
+          >
+            {error}
+          </div>
+        ) : null}
 
-          <button className="btn-primary mt-6 w-full" type="submit" disabled={loading}>
-            {loading ? "Creating…" : "Create distributor account"}
-          </button>
+        <button className="btn-primary mt-6 w-full py-3" type="submit" disabled={loading}>
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Creating account…
+            </span>
+          ) : (
+            "Create distributor account"
+          )}
+        </button>
 
-          <p className="mt-5 text-center text-sm text-ink-500">
-            Already registered?{" "}
-            <Link href="/login" className="font-semibold text-brand-700 hover:text-brand-800">
-              Sign in
-            </Link>
-          </p>
-        </form>
-      </section>
-    </main>
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-sand-200 pt-5 text-sm">
+          <p className="text-ink-500">Already registered?</p>
+          <Link href="/login" className="font-semibold text-brand-700 hover:text-brand-800">
+            Sign in
+          </Link>
+        </div>
+      </form>
+    </AuthLayout>
   );
 }

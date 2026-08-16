@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AuthLayout } from "@/components/AuthLayout";
+import { BrandMark } from "@/components/BrandMark";
+import { PasswordField } from "@/components/PasswordField";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -28,79 +31,87 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen lg:grid-cols-2">
-      <section className="relative hidden overflow-hidden bg-ink-900 lg:flex lg:flex-col lg:justify-between lg:p-10">
-        <div
-          aria-hidden
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(600px 360px at 20% 10%, rgba(58,168,146,0.35), transparent 60%), linear-gradient(160deg, #0f1720, #14594c)",
-          }}
-        />
-        <div className="relative">
-          <p className="font-display text-3xl font-semibold text-white">Webfinance</p>
-          <p className="mt-2 text-xs uppercase tracking-[0.18em] text-brand-200">
-            Distributor access
-          </p>
-        </div>
-        <div className="relative max-w-md">
-          <div className="section-rule bg-brand-300" />
-          <p className="mt-5 font-display text-4xl font-semibold leading-tight text-white">
-            Provision clients without the ops grind.
-          </p>
-        </div>
-      </section>
+    <AuthLayout
+      eyebrow="Distributor access"
+      headline="Sign in and ship client environments in minutes."
+      points={[
+        "One-click Deploy for Product A and Product B",
+        "Wallet + prepaid license inventory in one place",
+        "Domain, DNS, SSL, and tenant handshake automated",
+      ]}
+    >
+      <div className="mb-8 lg:hidden">
+        <BrandMark />
+      </div>
 
-      <section className="flex items-center justify-center px-4 py-12">
-        <form onSubmit={onSubmit} className="surface w-full max-w-md animate-rise rounded-xl p-7 shadow-soft md:p-8">
-          <p className="font-display text-2xl font-semibold text-ink-900 lg:hidden">Webfinance</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-900">
-            Sign in
-          </h1>
-          <p className="mt-2 text-sm text-ink-500">Use your distributor credentials to continue.</p>
+      <form
+        onSubmit={onSubmit}
+        className="surface rounded-2xl p-6 shadow-soft sm:p-8"
+        noValidate
+      >
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700">
+          Welcome back
+        </p>
+        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-[2.1rem]">
+          Sign in to Webfinance
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-ink-500">
+          Enter your distributor email and password to open the control panel.
+        </p>
 
-          <div className="mt-8 space-y-4">
-            <div>
-              <label className="label" htmlFor="email">Email</label>
-              <input
-                id="email"
-                className="input"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">Password</label>
-              <input
-                id="password"
-                className="input"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+        <div className="mt-8 space-y-4">
+          <div>
+            <label className="label" htmlFor="email">
+              Work email
+            </label>
+            <input
+              id="email"
+              className="input"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
-          {error ? <p className="mt-4 text-sm text-signal-bad">{error}</p> : null}
+          <PasswordField
+            id="password"
+            label="Password"
+            value={password}
+            onChange={setPassword}
+          />
+        </div>
 
-          <button className="btn-primary mt-6 w-full" type="submit" disabled={loading}>
-            {loading ? "Signing in…" : "Continue"}
-          </button>
+        {error ? (
+          <div
+            role="alert"
+            className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-signal-bad"
+          >
+            {error}
+          </div>
+        ) : null}
 
-          <p className="mt-5 text-center text-sm text-ink-500">
-            No account?{" "}
-            <Link href="/signup" className="font-semibold text-brand-700 hover:text-brand-800">
-              Create one
-            </Link>
-          </p>
-        </form>
-      </section>
-    </main>
+        <button className="btn-primary mt-6 w-full py-3" type="submit" disabled={loading}>
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Signing in…
+            </span>
+          ) : (
+            "Sign in"
+          )}
+        </button>
+
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-sand-200 pt-5 text-sm">
+          <p className="text-ink-500">New partner?</p>
+          <Link href="/signup" className="font-semibold text-brand-700 hover:text-brand-800">
+            Create account
+          </Link>
+        </div>
+      </form>
+    </AuthLayout>
   );
 }

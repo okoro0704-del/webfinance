@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 
 export default function HomePage() {
   return (
@@ -8,59 +9,69 @@ export default function HomePage() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(135deg, #0f1720 0%, #14594c 48%, #1f8a75 100%)",
+            "radial-gradient(900px 520px at 12% 8%, rgba(58,168,146,0.35), transparent 55%), linear-gradient(145deg, #0b141c 0%, #123c35 45%, #1f8a75 100%)",
         }}
       />
       <div
         aria-hidden
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-[0.18]"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.18) 0 1px, transparent 1px), radial-gradient(circle at 80% 40%, rgba(255,255,255,0.12) 0 1px, transparent 1px)",
-          backgroundSize: "28px 28px, 42px 42px",
+            "linear-gradient(rgba(255,255,255,0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.09) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
         }}
       />
 
-      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col justify-between px-6 py-8 md:px-10 md:py-10">
-        <header className="flex items-center justify-between">
-          <p className="font-display text-2xl font-semibold tracking-tight text-white md:text-3xl">
-            Webfinance
-          </p>
-          <Link
-            href="/login"
-            className="rounded-md border border-white/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            Sign in
-          </Link>
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-7 md:px-10 md:py-9">
+        <header className="flex items-center justify-between gap-4">
+          <BrandMark tone="light" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/login"
+              className="rounded-md px-3 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white sm:px-4"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/signup"
+              className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-ink-900 transition hover:bg-sand-50 sm:px-4"
+            >
+              Get started
+            </Link>
+          </div>
         </header>
 
-        <section className="max-w-3xl py-16 md:py-24">
-          <div className="section-rule animate-draw bg-brand-200" />
-          <h1 className="animate-rise mt-6 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-white md:text-7xl">
+        <section className="flex flex-1 flex-col justify-center py-16 md:py-20">
+          <p className="animate-fade text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-200">
+            Master distributor control panel
+          </p>
+          <h1 className="animate-rise mt-5 max-w-4xl font-display text-5xl font-semibold leading-[1.02] tracking-tight text-white md:text-7xl">
             Webfinance
           </h1>
-          <p className="animate-rise-delayed mt-5 max-w-xl text-lg leading-relaxed text-sand-100 md:text-xl">
-            Deploy Product A and Product B clients in one click — licenses, domains,
-            DNS/SSL, and tenant handshake included.
+          <p className="animate-rise-delayed mt-6 max-w-xl text-lg leading-relaxed text-sand-100/90 md:text-xl">
+            Provision Product A and Product B clients end-to-end — licenses, domains,
+            DNS/SSL, and tenant credentials in a single Deploy.
           </p>
           <div className="animate-rise-delayed mt-10 flex flex-wrap gap-3">
             <Link
               href="/signup"
-              className="rounded-md bg-white px-5 py-3 text-sm font-semibold text-ink-900 transition hover:bg-sand-50"
+              className="rounded-md bg-white px-5 py-3.5 text-sm font-semibold text-ink-900 transition hover:bg-sand-50"
             >
               Become a distributor
             </Link>
             <Link
-              href="/dashboard"
-              className="rounded-md border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              href="/login"
+              className="rounded-md border border-white/30 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10"
             >
-              Open control panel
+              Sign in to control panel
             </Link>
           </div>
         </section>
 
-        <footer className="border-t border-white/15 pt-5 text-xs uppercase tracking-[0.16em] text-white/55">
-          Master distributor control panel
+        <footer className="grid gap-4 border-t border-white/15 pt-6 text-sm text-white/60 md:grid-cols-3">
+          <p>License pools & wallet ledger</p>
+          <p>Zero-touch domain + DNS automation</p>
+          <p>Secure tenant handshake to Repo 1 / Repo 2</p>
         </footer>
       </div>
     </main>

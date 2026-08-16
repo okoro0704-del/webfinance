@@ -36,7 +36,7 @@ body {
   }
 
   .btn-primary {
-    @apply btn bg-brand-700 text-white hover:bg-brand-800 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45;
+    @apply btn bg-brand-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] hover:bg-brand-800 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45;
   }
 
   .btn-secondary {
@@ -48,7 +48,7 @@ body {
   }
 
   .input {
-    @apply w-full rounded-md border border-sand-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+    @apply w-full rounded-lg border border-sand-200 bg-white px-3.5 py-3 text-sm text-ink-900 outline-none transition placeholder:text-ink-400 hover:border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
   }
 
   .label {
