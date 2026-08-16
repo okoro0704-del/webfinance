@@ -35,13 +35,13 @@ export function DeployButton({
     <div className="flex flex-col items-end gap-1">
       <button
         type="button"
-        className="btn-primary"
+        className="btn-primary min-w-[108px]"
         disabled={disabled || loading}
         onClick={onDeploy}
       >
         {loading ? "Deploying…" : "Deploy"}
       </button>
-      {error ? <p className="max-w-[220px] text-right text-xs text-red-600">{error}</p> : null}
+      {error ? <p className="max-w-[240px] text-right text-xs text-signal-bad">{error}</p> : null}
     </div>
   );
 }

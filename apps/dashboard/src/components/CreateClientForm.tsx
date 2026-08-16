@@ -20,6 +20,13 @@ export function CreateClientForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function syncSlugFromName(name: string) {
+    setDisplayName(name);
+    if (!slug || slug === displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")) {
+      setSlug(name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -32,7 +39,7 @@ export function CreateClientForm({
       slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
       custom_domain: domain || null,
       status: "draft",
-      domain_status: domain ? "none" : "none",
+      domain_status: "none",
     });
     setLoading(false);
     if (insertErr) {
@@ -46,41 +53,66 @@ export function CreateClientForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="panel grid gap-3 p-4 md:grid-cols-2">
-      <div className="md:col-span-2">
-        <h2 className="text-base font-semibold">New client</h2>
-        <p className="text-sm text-ink-500">Draft a tenant, then click Deploy.</p>
+    <form onSubmit={onSubmit} className="surface rounded-xl p-5 shadow-soft md:p-6">
+      <div className="mb-5">
+        <h2 className="font-display text-2xl font-semibold text-ink-900">New client</h2>
+        <p className="mt-1 text-sm text-ink-500">
+          Create a draft tenant, then press Deploy to run the full provisioning pipeline.
+        </p>
       </div>
-      <div>
-        <label className="label">Display name</label>
-        <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="displayName">Display name</label>
+          <input
+            id="displayName"
+            className="input"
+            value={displayName}
+            onChange={(e) => syncSlugFromName(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="slug">Slug</label>
+          <input
+            id="slug"
+            className="input"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="domain">Custom domain</label>
+          <input
+            id="domain"
+            className="input"
+            placeholder="client.example.com"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="product">Product</label>
+          <select
+            id="product"
+            className="input"
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+          >
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} — ${Number(p.wholesale_unit_price).toFixed(2)}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-      <div>
-        <label className="label">Slug</label>
-        <input className="input" value={slug} onChange={(e) => setSlug(e.target.value)} required />
-      </div>
-      <div>
-        <label className="label">Custom domain</label>
-        <input
-          className="input"
-          placeholder="client.example.com"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="label">Product</label>
-        <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)}>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} (${p.wholesale_unit_price})
-            </option>
-          ))}
-        </select>
-      </div>
-      {error ? <p className="md:col-span-2 text-sm text-red-600">{error}</p> : null}
-      <div className="md:col-span-2">
-        <button className="btn-primary" type="submit" disabled={loading}>
+
+      {error ? <p className="mt-4 text-sm text-signal-bad">{error}</p> : null}
+
+      <div className="mt-5 flex justify-end">
+        <button className="btn-primary" type="submit" disabled={loading || products.length === 0}>
           {loading ? "Saving…" : "Create draft"}
         </button>
       </div>

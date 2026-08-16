@@ -1,21 +1,28 @@
 import type { Metadata } from "next";
-import { Source_Sans_3 } from "next/font/google";
+import { Fraunces, Manrope } from "next/font/google";
 import "./globals.css";
 
-const sourceSans = Source_Sans_3({
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-geist-sans",
+  variable: "--font-manrope",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
 });
 
 export const metadata: Metadata = {
-  title: "Distributor Control Panel",
+  title: "Webfinance | Distributor Control",
   description: "Master distributor control panel for Product A and Product B",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${sourceSans.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${manrope.variable} ${fraunces.variable} font-sans antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
