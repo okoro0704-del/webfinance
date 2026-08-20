@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ClientDomainActions } from "@/components/ClientDomainActions";
+import { ClientLifecycleActions } from "@/components/ClientLifecycleActions";
 import { DeployButton } from "@/components/DeployButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TenantDeliverables } from "@/components/TenantDeliverables";
@@ -149,10 +150,20 @@ export function ClientsList({
                       }
                       disabled={
                         deployDisabledWhenInactive ||
+                        c.status === "suspended" ||
+                        c.status === "cancelled" ||
                         (c.status === "active" && !needsProductProvision(c))
                       }
                     />
                   </div>
+
+                  {isAdmin ? (
+                    <ClientLifecycleActions
+                      clientId={c.id}
+                      displayName={c.display_name}
+                      status={c.status}
+                    />
+                  ) : null}
                 </div>
               </div>
             ) : null}

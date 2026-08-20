@@ -48,3 +48,6 @@ verify_jwt = true
 
 [functions.allocate-credits]
 verify_jwt = true
+
+[functions.set-client-status]
+verify_jwt = true

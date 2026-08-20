@@ -63,7 +63,7 @@ export default async function ClientsPage() {
         <h1 className="page-title mt-4">Clients</h1>
         <p className="page-copy">
           {isAdmin
-            ? "All tenants across partners. Tap a client to open details, deploy, or review access."
+            ? "All tenants across partners. Tap a client to open details, deploy, suspend, or delete."
             : "Create tenants on slug.webfinance.app. Tap a client to deploy, view login details, or connect a personal domain."}
         </p>
       </header>
