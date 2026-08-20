@@ -220,34 +220,26 @@ Deno.serve(async (req) => {
       .update({ status: "provisioning", provision_error: null })
       .eq("id", client.id);
 
-    // ---- 1) License & wallet validation ----
-    // Option B: billing disabled — Deploy is free until re-enabled via DISABLE_DEPLOY_BILLING=false
-    const billingDisabled = Deno.env.get("DISABLE_DEPLOY_BILLING") !== "false";
-    let reserve: unknown = null;
-
-    if (billingDisabled) {
-      await pushStep(job.id, "wallet_validation", "skipped", {
-        reason: "DISABLE_DEPLOY_BILLING enabled — no credit/wallet charge",
-      });
-      await pushStep(job.id, "license_debit", "skipped", {
-        reason: "billing disabled",
-      });
-    } else {
-      const { data, error: reserveErr } = await admin.rpc("reserve_deploy_license", {
+    // ---- 1) License validation ----
+    // Distributors / Master: unlimited. Software Retailers: consume prepaid product units.
+    const { data: reserveRows, error: reserveErr } = await admin.rpc(
+      "reserve_deploy_license",
+      {
         p_distributor_id: distributor.id,
         p_client_id: client.id,
         p_product_id: client.product_id,
         p_actor: user.id,
-      });
+      },
+    );
 
-      if (reserveErr) {
-        await failJob(admin, job.id, client.id, "wallet_validation", reserveErr.message, steps);
-        return jsonResponse({ error: reserveErr.message }, 402);
-      }
-      reserve = data;
-      await pushStep(job.id, "wallet_validation", "ok", data?.[0] ?? data);
-      await pushStep(job.id, "license_debit", "ok", data?.[0] ?? data);
+    if (reserveErr) {
+      await failJob(admin, job.id, client.id, "wallet_validation", reserveErr.message, steps);
+      return jsonResponse({ error: reserveErr.message }, 402);
     }
+
+    const reserve = Array.isArray(reserveRows) ? reserveRows[0] : reserveRows;
+    await pushStep(job.id, "wallet_validation", "ok", reserve);
+    await pushStep(job.id, "license_debit", "ok", reserve);
 
     // ---- 2) Domain / portal hostname ----
     // Tenants always use slug.webfinance.app (MM and PM share the pattern)
@@ -413,17 +405,12 @@ Deno.serve(async (req) => {
     const clientLoginUrl =
       tenant.accessUrl ||
       `https://${client.slug}.apps.webfinance.app/login`;
-    const isPm = String(product.sku).toUpperCase().includes("PRODUCT_B");
-    const masterDashboardUrl = isPm
-      ? "https://pm.webfinance.app/hub/login"
-      : "https://mm.webfinance.app/hub/login";
     const credentialsPayload = {
       admin_email: tenant.adminEmail,
       temporary_password: tenant.temporaryPassword ?? null,
       access_url: clientLoginUrl,
       client_login_url: clientLoginUrl,
       admin_dashboard_url: clientLoginUrl.replace(/\/login\/?$/, "/admin"),
-      master_dashboard_url: masterDashboardUrl,
       portal_url: portalUrl,
       website: portalUrl,
       brand_name: brandName,

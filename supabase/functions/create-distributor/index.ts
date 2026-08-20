@@ -1,15 +1,13 @@
 /**
- * Platform admin: create a distributor account (auth user + distributor row).
+ * Platform admin: create a distributor or software retailer account.
  * POST body:
  * {
- *   email: string,
- *   password: string,
- *   company_name: string,
- *   full_name?: string,
+ *   email, password, company_name, full_name?,
  *   status?: "pending" | "active",
+ *   partner_tier?: "distributor" | "software_retailer",
  *   wallet_amount?: number,
- *   product_a_credits?: number,
- *   product_b_credits?: number
+ *   product_a_credits?: number,  // retailers default to 1
+ *   product_b_credits?: number   // retailers default to 1 (2 products total)
  * }
  */
 
@@ -46,6 +44,8 @@ Deno.serve(async (req) => {
   const company_name = String(body.company_name ?? "").trim();
   const full_name = String(body.full_name ?? "").trim() || company_name;
   const status = body.status === "pending" ? "pending" : "active";
+  const partner_tier =
+    body.partner_tier === "software_retailer" ? "software_retailer" : "distributor";
 
   if (!email || !password || !company_name) {
     return jsonResponse({ error: "email, password, and company_name are required" }, 400);
@@ -58,14 +58,13 @@ Deno.serve(async (req) => {
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name, role: "distributor" },
+    user_metadata: { full_name, role: "distributor", partner_tier },
   });
 
   if (createErr || !created.user) {
     return jsonResponse({ error: createErr?.message ?? "Failed to create auth user" }, 400);
   }
 
-  // Profile row is created by trigger as distributor; keep it that way.
   await admin
     .from("profiles")
     .update({ full_name, role: "distributor" })
@@ -79,13 +78,14 @@ Deno.serve(async (req) => {
       contact_email: email,
       status,
       wallet_balance: 0,
+      partner_tier,
     })
     .select("*")
     .single();
 
   if (distErr || !distributor) {
     await admin.auth.admin.deleteUser(created.user.id);
-    return jsonResponse({ error: distErr?.message ?? "Failed to create distributor" }, 400);
+    return jsonResponse({ error: distErr?.message ?? "Failed to create partner" }, 400);
   }
 
   const result: Record<string, unknown> = {
@@ -94,6 +94,7 @@ Deno.serve(async (req) => {
     profile_id: created.user.id,
     email,
     status: distributor.status,
+    partner_tier: distributor.partner_tier,
     subdomain: distributor.subdomain,
     subdomain_slot: distributor.subdomain_slot,
   };
@@ -125,15 +126,33 @@ Deno.serve(async (req) => {
     result[`${sku.toLowerCase()}_credits`] = data;
   }
 
+  // Retailers start with 2 product units (1 Money Movement + 1 Parcel Movement)
+  // unless Master overrides the counts explicitly.
+  const defaultA = partner_tier === "software_retailer" ? 1 : 0;
+  const defaultB = partner_tier === "software_retailer" ? 1 : 0;
+  const productACredits =
+    body.product_a_credits === undefined || body.product_a_credits === null
+      ? defaultA
+      : Number(body.product_a_credits);
+  const productBCredits =
+    body.product_b_credits === undefined || body.product_b_credits === null
+      ? defaultB
+      : Number(body.product_b_credits);
+
   try {
-    await allocateSku("PRODUCT_A", Number(body.product_a_credits ?? 0));
-    await allocateSku("PRODUCT_B", Number(body.product_b_credits ?? 0));
+    await allocateSku("PRODUCT_A", productACredits);
+    await allocateSku("PRODUCT_B", productBCredits);
   } catch (e) {
     return jsonResponse(
       { error: e instanceof Error ? e.message : "Credit allocation failed", ...result },
       400,
     );
   }
+
+  result.starter_units = {
+    PRODUCT_A: productACredits,
+    PRODUCT_B: productBCredits,
+  };
 
   return jsonResponse(result);
 });

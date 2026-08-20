@@ -23,12 +23,17 @@ export function ClientsList({
   isAdmin,
   canManageDomainsFor,
   deployDisabledWhenInactive,
+  isRetailer = false,
+  inventoryByProductId,
 }: {
   rows: ClientListItem[];
   isAdmin: boolean;
   /** distributor id whose clients can manage domains from this login */
   canManageDomainsFor: string | null;
   deployDisabledWhenInactive: boolean;
+  isRetailer?: boolean;
+  /** Remaining prepaid units per product (retailers only). */
+  inventoryByProductId?: Record<string, number>;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -137,6 +142,15 @@ export function ClientsList({
                     <p className="text-xs text-signal-bad">{c.provision_error}</p>
                   ) : null}
 
+                  {isRetailer &&
+                  needsProductProvision(c) &&
+                  (inventoryByProductId?.[c.product_id] ?? 0) <= 0 ? (
+                    <p className="text-xs text-amber-800">
+                      No units left for {c.products?.name ?? "this product"}. Ask Master to sell
+                      you more before Deploy.
+                    </p>
+                  ) : null}
+
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                     <DeployButton
                       clientId={c.id}
@@ -152,7 +166,10 @@ export function ClientsList({
                         deployDisabledWhenInactive ||
                         c.status === "suspended" ||
                         c.status === "cancelled" ||
-                        (c.status === "active" && !needsProductProvision(c))
+                        (c.status === "active" && !needsProductProvision(c)) ||
+                        (isRetailer &&
+                          needsProductProvision(c) &&
+                          (inventoryByProductId?.[c.product_id] ?? 0) <= 0)
                       }
                     />
                   </div>

@@ -18,7 +18,7 @@ const baseLinks = [
 const adminLink = {
   href: "/distributors",
   label: "Partners",
-  hint: "Distributors",
+  hint: "Distributors & retailers",
   icon: "partners",
 };
 

@@ -6,6 +6,7 @@ export type CreateDistributorInput = {
   company_name: string;
   full_name?: string;
   status?: "pending" | "active";
+  partner_tier?: "distributor" | "software_retailer";
   wallet_amount?: number;
   product_a_credits?: number;
   product_b_credits?: number;
@@ -17,9 +18,11 @@ export type CreateDistributorResult = {
   distributor_id?: string;
   email?: string;
   status?: string;
+  partner_tier?: string;
   wallet_balance?: number;
   subdomain?: string;
   subdomain_slot?: number;
+  starter_units?: { PRODUCT_A?: number; PRODUCT_B?: number };
 };
 
 export async function createDistributor(

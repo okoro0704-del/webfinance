@@ -8,12 +8,20 @@ import type { Product } from "@/lib/types";
 export function CreateClientForm({
   distributorId,
   products,
+  inventoryByProductId,
+  isRetailer = false,
 }: {
   distributorId: string;
   products: Product[];
   productPortalBases?: Record<string, string>;
+  /** Remaining prepaid units per product (retailers only). */
+  inventoryByProductId?: Record<string, number>;
+  isRetailer?: boolean;
 }) {
   const router = useRouter();
+  const stockedProducts = isRetailer
+    ? products.filter((p) => (inventoryByProductId?.[p.id] ?? 0) > 0)
+    : products;
   const [displayName, setDisplayName] = useState("");
   const [slug, setSlug] = useState("");
   const [adminFullName, setAdminFullName] = useState("");
@@ -21,7 +29,7 @@ export function CreateClientForm({
   const [brandName, setBrandName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#14594c");
-  const [productId, setProductId] = useState(products[0]?.id ?? "");
+  const [productId, setProductId] = useState(stockedProducts[0]?.id ?? products[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -51,6 +59,11 @@ export function CreateClientForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    if (isRetailer && (inventoryByProductId?.[productId] ?? 0) <= 0) {
+      setLoading(false);
+      setError("No units left for this product. Ask Master to sell you more before creating a client.");
+      return;
+    }
     const supabase = createClient();
     let nextSlug = toSlug(slug || displayName);
     if (!nextSlug) {
@@ -127,6 +140,9 @@ export function CreateClientForm({
         <p className="mt-2 text-sm text-ink-500">
           Create a draft tenant, then open it in the list and Deploy. Their product login uses the
           branding below.
+          {isRetailer
+            ? " Each Deploy uses one prepaid product unit from your stock."
+            : ""}
         </p>
       </div>
 
@@ -246,20 +262,39 @@ export function CreateClientForm({
             className="input"
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
+            disabled={isRetailer && stockedProducts.length === 0}
           >
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            {products.map((p) => {
+              const left = inventoryByProductId?.[p.id];
+              const soldOut = isRetailer && (left ?? 0) <= 0;
+              return (
+                <option key={p.id} value={p.id} disabled={soldOut}>
+                  {p.name}
+                  {isRetailer
+                    ? soldOut
+                      ? " · sold out"
+                      : ` · ${left ?? 0} unit${(left ?? 0) === 1 ? "" : "s"} left`
+                    : ""}
+                </option>
+              );
+            })}
           </select>
+          {isRetailer && stockedProducts.length === 0 ? (
+            <p className="mt-2 text-xs text-amber-800">
+              Stock empty — ask Master (Partners → Sell units) before creating more clients.
+            </p>
+          ) : null}
         </div>
       </div>
 
       {error ? <p className="mt-4 text-sm text-signal-bad">{error}</p> : null}
 
       <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <button className="btn-primary w-full sm:w-auto" type="submit" disabled={loading || products.length === 0}>
+        <button
+          className="btn-primary w-full sm:w-auto"
+          type="submit"
+          disabled={loading || products.length === 0 || (isRetailer && stockedProducts.length === 0)}
+        >
           {loading ? "Saving…" : "Create draft"}
         </button>
       </div>

@@ -16,6 +16,7 @@ export type Distributor = {
   subdomain?: string | null;
   subdomain_slot?: number | null;
   is_master?: boolean;
+  partner_tier?: "distributor" | "software_retailer";
   custom_domain?: string | null;
   domain_status?: string | null;
 };
@@ -46,7 +47,7 @@ export type ClientRow = {
     website?: string;
     brand_name?: string;
     client_login_url?: string;
-    master_dashboard_url?: string;
+    admin_dashboard_url?: string;
   } | null;
   provision_error: string | null;
   products?: Product;
