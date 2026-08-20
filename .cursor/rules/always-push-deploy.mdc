@@ -1,0 +1,17 @@
+---
+description: Always commit, push to GitHub, and deploy to Netlify after meaningful changes
+alwaysApply: true
+---
+
+# Always push to GitHub and Netlify
+
+After completing meaningful code or config changes in this monorepo or related apps (Parcel Movement / Money Movement), do all of the following without waiting to be asked:
+
+1. **Commit** relevant files (exclude secrets, `.env*`, auth dumps, one-off diag noise).
+2. **Push** to `origin` on the current branch (`git push -u origin HEAD` if needed).
+3. **Deploy to Netlify** for the app(s) that changed:
+   - Control Plane (WebFinance): site `24202d75-e5e1-4e4a-a5ea-bf5a3adc88c1` via `scripts/deploy-netlify.ps1` or equivalent prod deploy
+   - Parcel Movement: Netlify site `7958037c-d19e-42ba-97f6-a308f78fa27d` (`safeogistics` / pm.webfinance.app)
+   - Money Movement: Netlify site `c9400b72-b2fb-4803-9bb9-6c0ee521440c` (`aesthetic-stardust-5199e7` / mm.webfinance.app)
+
+Prefer production deploys (`--prod`). Report the live URL when done.
