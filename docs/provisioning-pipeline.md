@@ -43,6 +43,33 @@ sequenceDiagram
 - `X-Distributor-Timestamp`: epoch ms
 - `X-Idempotency-Key`: client UUID
 
+Expected JSON body (Distributor CP → product):
+
+```json
+{
+  "client_id": "…",
+  "distributor_id": "…",
+  "product_sku": "PRODUCT_B",
+  "display_name": "Miami Security",
+  "slug": "miamisecurity",
+  "custom_domain": "miamisecurity.webfinance.app",
+  "admin_email": "admin@miamisecurity.webfinance.app",
+  "admin_full_name": "Miami Security Admin",
+  "brand_name": "Miami Security",
+  "company_name": "Miami Security",
+  "logo_url": null,
+  "primary_color": "#14594c",
+  "branding": {
+    "brand_name": "Miami Security",
+    "company_name": "Miami Security",
+    "logo_url": null,
+    "primary_color": "#14594c"
+  }
+}
+```
+
+Product apps (MM/PM) should render a **per-tenant branded login** using `branding` (logo, colors, brand name) resolved by hostname (`slug.webfinance.app`).
+
 Expected JSON response:
 
 ```json
@@ -50,6 +77,6 @@ Expected JSON response:
   "tenant_id": "ten_123",
   "admin_email": "admin@client.com",
   "temporary_password": "one-time",
-  "access_url": "https://client.example.com"
+  "access_url": "https://miamisecurity.webfinance.app"
 }
 ```

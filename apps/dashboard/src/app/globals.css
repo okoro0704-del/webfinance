@@ -20,6 +20,38 @@ body {
     radial-gradient(820px 420px at 100% 0%, rgba(30, 42, 54, 0.07), transparent 50%),
     linear-gradient(180deg, #f7f5f1 0%, #f0ebe3 100%);
   min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-shell {
+  min-height: 100dvh;
+}
+
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.pb-mobile-nav {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1024px) {
+  .pb-mobile-nav {
+    padding-bottom: 2rem;
+  }
+}
+
+/* Installed PWA: slightly tighter chrome */
+@media (display-mode: standalone) {
+  body {
+    user-select: none;
+  }
+  input,
+  textarea {
+    user-select: text;
+  }
 }
 
 ::selection {
@@ -36,11 +68,11 @@ body {
   }
 
   .btn-primary {
-    @apply btn bg-brand-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] hover:bg-brand-800 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45;
+    @apply btn min-h-11 bg-brand-700 text-white shadow-[0_1px_0_rgba(255,255,255,0.12)_inset] hover:bg-brand-800 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45;
   }
 
   .btn-secondary {
-    @apply btn border border-ink-200 bg-white text-ink-800 hover:border-ink-400 hover:bg-sand-50 active:translate-y-px;
+    @apply btn min-h-11 border border-ink-200 bg-white text-ink-800 hover:border-ink-400 hover:bg-sand-50 active:translate-y-px;
   }
 
   .btn-ghost {
@@ -56,11 +88,11 @@ body {
   }
 
   .page-title {
-    @apply font-display text-3xl font-semibold tracking-tight text-ink-900 md:text-4xl;
+    @apply font-display text-xl font-semibold tracking-tight text-ink-900 sm:text-3xl md:text-4xl;
   }
 
   .page-copy {
-    @apply mt-2 max-w-2xl text-sm leading-relaxed text-ink-500 md:text-base;
+    @apply mt-2 max-w-2xl text-sm leading-relaxed text-ink-500 sm:text-[0.95rem] md:text-base;
   }
 
   .section-rule {

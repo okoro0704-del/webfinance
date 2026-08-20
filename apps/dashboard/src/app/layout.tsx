@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Manrope } from "next/font/google";
+import { RegisterSW } from "@/components/RegisterSW";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -13,14 +14,42 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Webfinance | Distributor Control",
-  description: "Master distributor control panel for Product A and Product B",
+  title: "Webfinance | Control",
+  description: "Master and distributor control panel for Money Movement and Parcel Movement",
+  applicationName: "Webfinance",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Webfinance",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#14594c" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1720" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${manrope.variable} ${fraunces.variable} font-sans antialiased`}>
+        <RegisterSW />
         {children}
       </body>
     </html>

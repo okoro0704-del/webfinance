@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { BrandMark } from "@/components/BrandMark";
@@ -9,7 +8,6 @@ import { PasswordField } from "@/components/PasswordField";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +19,13 @@ export default function LoginPage() {
     setError(null);
     const supabase = createClient();
     const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (signErr) {
+      setLoading(false);
       setError(signErr.message);
       return;
     }
-    router.push("/dashboard");
-    router.refresh();
+    // Hard navigate — faster than soft router + refresh after auth cookie write
+    window.location.assign("/dashboard");
   }
 
   return (
@@ -35,9 +33,9 @@ export default function LoginPage() {
       eyebrow="Distributor access"
       headline="Sign in and ship client environments in minutes."
       points={[
-        "One-click Deploy for Product A and Product B",
-        "Wallet + prepaid license inventory in one place",
-        "Domain, DNS, SSL, and tenant handshake automated",
+        "One-click Deploy for Money Movement and Parcel Movement",
+        "Client portals, domains, and deliverables in one place",
+        "Request Master help when something needs fixing",
       ]}
     >
       <div className="mb-8 lg:hidden">

@@ -10,11 +10,12 @@ export type DeployResult = {
     access_url: string;
   };
   job?: unknown;
+  reused?: boolean;
 };
 
 export async function deployClient(
   clientId: string,
-  opts?: { purchaseDomain?: boolean },
+  opts?: { force?: boolean },
 ): Promise<DeployResult> {
   const supabase = createClient();
   const {
@@ -30,11 +31,12 @@ export async function deployClient(
       Authorization: `Bearer ${session.access_token}`,
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       "Content-Type": "application/json",
-      "x-idempotency-key": `deploy:${clientId}`,
+      "x-idempotency-key": `deploy:${clientId}:${Date.now()}`,
     },
     body: JSON.stringify({
       client_id: clientId,
-      purchase_domain: opts?.purchaseDomain ?? true,
+      purchase_domain: false,
+      force: opts?.force ?? false,
     }),
   });
 

@@ -57,8 +57,9 @@ export default function SignupPage() {
       eyebrow="Partner onboarding"
       headline="Create your distributor workspace and start provisioning."
       points={[
-        "Manage Product A and Product B from one console",
-        "Track wallet balance and prepaid license pools",
+        "Manage Money Movement and Parcel Movement from one console",
+        "Deploy tenants and manage portals for your clients",
+        "Send Master a request when something needs fixing",
         "Accounts stay pending until platform activation",
       ]}
     >

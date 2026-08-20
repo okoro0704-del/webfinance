@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
+import { ClientsList } from "@/components/ClientsList";
 import { CreateClientForm } from "@/components/CreateClientForm";
-import { DeployButton } from "@/components/DeployButton";
 import { Shell } from "@/components/Shell";
-import { StatusBadge } from "@/components/StatusBadge";
 import { createClient } from "@/lib/supabase/server";
-import type { ClientRow, Product } from "@/lib/types";
+import type { Product } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -13,13 +15,14 @@ export default async function ClientsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: distributor } = await supabase
-    .from("distributors")
-    .select("*")
-    .eq("profile_id", user.id)
-    .maybeSingle();
+  const [{ data: profile }, { data: distributor }] = await Promise.all([
+    supabase.from("profiles").select("role, email").eq("id", user.id).maybeSingle(),
+    supabase.from("distributors").select("*").eq("profile_id", user.id).maybeSingle(),
+  ]);
 
-  if (!distributor) {
+  const isAdmin = profile?.role === "platform_admin";
+
+  if (!distributor && !isAdmin) {
     return (
       <Shell>
         <div className="surface rounded-xl p-6 text-sm text-ink-500">
@@ -29,108 +32,87 @@ export default async function ClientsPage() {
     );
   }
 
-  const [{ data: products }, { data: clients }] = await Promise.all([
-    supabase.from("products").select("id, sku, name, wholesale_unit_price").eq("is_active", true),
-    supabase
-      .from("clients")
-      .select("*, products(id, sku, name, wholesale_unit_price)")
-      .eq("distributor_id", distributor.id)
-      .order("created_at", { ascending: false }),
-  ]);
+  const productsQuery = supabase
+    .from("products")
+    .select("id, sku, name, wholesale_unit_price, client_portal_base_domain")
+    .eq("is_active", true);
 
-  const rows = (clients ?? []) as ClientRow[];
+  const clientsQuery = isAdmin
+    ? supabase
+        .from("clients")
+        .select(
+          "*, products!clients_product_id_fkey(id, sku, name), distributors!clients_distributor_id_fkey(company_name, contact_email)",
+        )
+        .order("created_at", { ascending: false })
+    : supabase
+        .from("clients")
+        .select("*, products!clients_product_id_fkey(id, sku, name)")
+        .eq("distributor_id", distributor!.id)
+        .order("created_at", { ascending: false });
+
+  const [{ data: products, error: productsErr }, { data: clients, error: clientsErr }] =
+    await Promise.all([productsQuery, clientsQuery]);
+
+  const rows = clients ?? [];
+  const loadError = productsErr?.message || clientsErr?.message || null;
 
   return (
-    <Shell companyName={distributor.company_name}>
+    <Shell companyName={distributor?.company_name ?? "Master control"} isAdmin={isAdmin}>
       <header className="animate-rise">
         <div className="section-rule" />
         <h1 className="page-title mt-4">Clients</h1>
         <p className="page-copy">
-          Draft a tenant, then Deploy to run domain registration, Cloudflare DNS/SSL, and product handshake.
+          {isAdmin
+            ? "All tenants across partners. Tap a client to open details, deploy, or review access."
+            : "Create tenants on slug.webfinance.app. Tap a client to deploy, view login details, or connect a personal domain."}
         </p>
       </header>
 
-      <div className="mt-8 space-y-8 animate-rise-delayed">
-        <CreateClientForm
-          distributorId={distributor.id}
-          products={(products ?? []) as Product[]}
-        />
+      <div className="mt-6 space-y-6 animate-rise-delayed sm:mt-8 sm:space-y-8">
+        {distributor ? (
+          <CreateClientForm
+            distributorId={distributor.id}
+            products={(products ?? []) as Product[]}
+            productPortalBases={Object.fromEntries(
+              (products ?? []).map((p) => [
+                p.id,
+                (p.client_portal_base_domain || "webfinance.app") as string,
+              ]),
+            )}
+          />
+        ) : (
+          <div className="surface rounded-xl p-5 text-sm text-ink-500">
+            No distributor workspace linked to this admin login — roster below is read-only.
+          </div>
+        )}
 
         <section>
-          <div className="mb-4 flex items-end justify-between gap-3">
+          <div className="mb-3 flex items-end justify-between gap-3 sm:mb-4">
             <div>
-              <h2 className="font-display text-2xl font-semibold text-ink-900">Tenant list</h2>
-              <p className="mt-1 text-sm text-ink-500">{rows.length} client{rows.length === 1 ? "" : "s"}</p>
+              <h2 className="font-display text-xl font-semibold text-ink-900 sm:text-2xl">
+                Tenant list
+              </h2>
+              <p className="mt-1 text-sm text-ink-500">
+                {rows.length} client{rows.length === 1 ? "" : "s"}
+                {isAdmin ? " across all distributors" : ""}
+                {" · "}
+                tap a row for details
+              </p>
             </div>
           </div>
 
-          <div className="surface overflow-hidden rounded-xl shadow-soft">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-sand-200 bg-sand-50 text-[11px] uppercase tracking-[0.12em] text-ink-500">
-                    <th className="px-5 py-3 font-semibold">Client</th>
-                    <th className="px-5 py-3 font-semibold">Product</th>
-                    <th className="px-5 py-3 font-semibold">Domain</th>
-                    <th className="px-5 py-3 font-semibold">Status</th>
-                    <th className="px-5 py-3 text-right font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((c) => (
-                    <tr key={c.id} className="border-b border-sand-200 last:border-0 hover:bg-sand-50/70">
-                      <td className="px-5 py-4 align-top">
-                        <p className="font-semibold text-ink-900">{c.display_name}</p>
-                        <p className="text-xs text-ink-500">{c.slug}</p>
-                        {c.credentials_payload?.access_url ? (
-                          <a
-                            className="mt-1 inline-block text-xs font-semibold text-brand-700 hover:text-brand-800"
-                            href={c.credentials_payload.access_url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Open tenant
-                          </a>
-                        ) : null}
-                      </td>
-                      <td className="px-5 py-4 align-top text-ink-700">
-                        {c.products?.name ?? "—"}
-                      </td>
-                      <td className="px-5 py-4 align-top">
-                        <p className="text-ink-800">{c.custom_domain ?? "—"}</p>
-                        <p className="text-xs text-ink-500">{c.domain_status}</p>
-                      </td>
-                      <td className="px-5 py-4 align-top">
-                        <StatusBadge status={c.status} />
-                        {c.provision_error ? (
-                          <p className="mt-2 max-w-[220px] text-xs text-signal-bad">
-                            {c.provision_error}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="px-5 py-4 align-top text-right">
-                        <DeployButton
-                          clientId={c.id}
-                          disabled={
-                            distributor.status !== "active" ||
-                            c.status === "active" ||
-                            c.status === "provisioning"
-                          }
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                  {rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-5 py-12 text-center text-ink-500">
-                        No clients yet. Create a draft above to get started.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+          {loadError ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-signal-bad">
+              Could not load clients: {loadError}
             </div>
-          </div>
+          ) : null}
+
+          <ClientsList
+            rows={rows as Parameters<typeof ClientsList>[0]["rows"]}
+            isAdmin={isAdmin}
+            canManageDomainsFor={distributor?.id ?? null}
+            deployDisabledWhenInactive={distributor?.status !== "active" && !isAdmin}
+          />
         </section>
       </div>
     </Shell>

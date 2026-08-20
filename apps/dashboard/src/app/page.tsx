@@ -49,7 +49,7 @@ export default function HomePage() {
             Webfinance
           </h1>
           <p className="animate-rise-delayed mt-6 max-w-xl text-lg leading-relaxed text-sand-100/90 md:text-xl">
-            Provision Product A and Product B clients end-to-end — licenses, domains,
+            Provision Money Movement and Parcel Movement clients end-to-end — licenses, domains,
             DNS/SSL, and tenant credentials in a single Deploy.
           </p>
           <div className="animate-rise-delayed mt-10 flex flex-wrap gap-3">
@@ -69,9 +69,9 @@ export default function HomePage() {
         </section>
 
         <footer className="grid gap-4 border-t border-white/15 pt-6 text-sm text-white/60 md:grid-cols-3">
-          <p>License pools & wallet ledger</p>
-          <p>Zero-touch domain + DNS automation</p>
-          <p>Secure tenant handshake to Repo 1 / Repo 2</p>
+          <p>Partner portals &amp; client deploy</p>
+          <p>Self-serve domains with auto SSL</p>
+          <p>Requests inbox to Master for fixes</p>
         </footer>
       </div>
     </main>

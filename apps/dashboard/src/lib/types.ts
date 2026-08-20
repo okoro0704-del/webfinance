@@ -3,6 +3,7 @@ export type Product = {
   sku: string;
   name: string;
   wholesale_unit_price: number;
+  client_portal_base_domain?: string | null;
 };
 
 export type Distributor = {
@@ -12,6 +13,11 @@ export type Distributor = {
   status: "pending" | "active" | "suspended";
   wallet_balance: number;
   currency: string;
+  subdomain?: string | null;
+  subdomain_slot?: number | null;
+  is_master?: boolean;
+  custom_domain?: string | null;
+  domain_status?: string | null;
 };
 
 export type InventoryRow = {
@@ -28,12 +34,19 @@ export type ClientRow = {
   slug: string;
   status: string;
   custom_domain: string | null;
+  portal_hostname?: string | null;
   domain_status: string;
   product_id: string;
+  external_tenant_id?: string | null;
   credentials_payload: {
     admin_email?: string;
     temporary_password?: string | null;
     access_url?: string;
+    portal_url?: string;
+    website?: string;
+    brand_name?: string;
+    client_login_url?: string;
+    master_dashboard_url?: string;
   } | null;
   provision_error: string | null;
   products?: Product;

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { Shell } from "@/components/Shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { createClient } from "@/lib/supabase/server";
-import type { InventoryRow } from "@/lib/types";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -12,18 +11,11 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: distributor } = await supabase
-    .from("distributors")
-    .select("*")
-    .eq("profile_id", user.id)
-    .maybeSingle();
-
-  const { data: inventory } = distributor
-    ? await supabase
-        .from("distributor_inventory")
-        .select("*, products(id, sku, name, wholesale_unit_price)")
-        .eq("distributor_id", distributor.id)
-    : { data: [] as InventoryRow[] };
+  const [{ data: profile }, { data: distributor }] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+    supabase.from("distributors").select("*").eq("profile_id", user.id).maybeSingle(),
+  ]);
+  const isAdmin = profile?.role === "platform_admin";
 
   const { count: clientCount } = distributor
     ? await supabase
@@ -40,13 +32,28 @@ export default async function DashboardPage() {
         .eq("status", "active")
     : { count: 0 };
 
+  const { count: openRequests } = isAdmin
+    ? await supabase
+        .from("support_requests")
+        .select("*", { count: "exact", head: true })
+        .in("status", ["open", "in_progress"])
+    : distributor
+      ? await supabase
+          .from("support_requests")
+          .select("*", { count: "exact", head: true })
+          .eq("distributor_id", distributor.id)
+          .in("status", ["open", "in_progress"])
+      : { count: 0 };
+
   return (
-    <Shell companyName={distributor?.company_name}>
+    <Shell companyName={distributor?.company_name} isAdmin={isAdmin}>
       <header className="animate-rise">
         <div className="section-rule" />
         <h1 className="page-title mt-4">Overview</h1>
         <p className="page-copy">
-          Prepaid inventory is used first. Wallet wholesale balance covers Deploy when credits are empty.
+          {isAdmin
+            ? "Create partners, review client tenants, and answer help requests."
+            : "Create clients, deploy products, manage domains, and request help from Master when needed."}
         </p>
       </header>
 
@@ -62,74 +69,68 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="mt-8 space-y-8 animate-rise-delayed">
-          <section className="grid gap-px overflow-hidden rounded-xl border border-sand-200 bg-sand-200 shadow-soft md:grid-cols-3">
+          <section className="grid gap-px overflow-hidden rounded-xl border border-sand-200 bg-sand-200 shadow-soft md:grid-cols-2 lg:grid-cols-4">
             <div className="bg-white p-6">
-              <p className="label">Wallet balance</p>
-              <p className="metric-value mt-3">
-                <span className="text-2xl text-ink-500">{distributor.currency}</span>{" "}
-                {Number(distributor.wallet_balance).toFixed(2)}
+              <p className="label">Account</p>
+              <p className="mt-3 font-display text-xl font-semibold text-ink-900">
+                {distributor.company_name}
               </p>
               <div className="mt-4">
                 <StatusBadge status={distributor.status} />
               </div>
             </div>
             <div className="bg-white p-6">
-              <p className="label">Clients</p>
-              <p className="metric-value mt-3">{clientCount ?? 0}</p>
-              <p className="mt-3 text-sm text-ink-500">
-                {activeCount ?? 0} live across Product A &amp; B
-              </p>
+              <p className="label">Portal</p>
+              {distributor.is_master ? (
+                <>
+                  <p className="mt-3 font-display text-xl font-semibold text-ink-900">
+                    webfinance.app
+                  </p>
+                  <p className="mt-2 text-sm text-ink-500">Master control panel</p>
+                </>
+              ) : distributor.subdomain ? (
+                <>
+                  <p className="mt-3 break-all font-display text-lg font-semibold text-ink-900">
+                    {distributor.custom_domain || distributor.subdomain}
+                  </p>
+                  <a
+                    className="mt-3 inline-block text-sm font-semibold text-brand-700 hover:text-brand-800"
+                    href={`https://${distributor.custom_domain || distributor.subdomain}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open portal
+                  </a>
+                </>
+              ) : (
+                <p className="mt-3 text-sm text-ink-500">Pending assignment</p>
+              )}
             </div>
             <div className="bg-white p-6">
-              <p className="label">Next action</p>
-              <p className="mt-3 font-display text-2xl font-semibold text-ink-900">
-                Deploy a client
-              </p>
-              <Link href="/clients" className="btn-primary mt-5">
-                Go to clients
-              </Link>
+              <p className="label">Clients</p>
+              <p className="metric-value mt-3">{clientCount ?? 0}</p>
+              <p className="mt-3 text-sm text-ink-500">{activeCount ?? 0} live</p>
             </div>
-          </section>
-
-          <section>
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <h2 className="font-display text-2xl font-semibold text-ink-900">License pools</h2>
-                <p className="mt-1 text-sm text-ink-500">Prepaid credits ready for zero-touch deploy.</p>
-              </div>
-              <Link href="/wallet" className="btn-secondary">
-                View wallet
-              </Link>
+            <div className="bg-white p-6">
+              <p className="label">{isAdmin ? "Open requests" : "Next action"}</p>
+              {isAdmin ? (
+                <>
+                  <p className="metric-value mt-3">{openRequests ?? 0}</p>
+                  <Link href="/requests" className="btn-primary mt-5">
+                    Review requests
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="mt-3 font-display text-2xl font-semibold text-ink-900">
+                    Deploy a client
+                  </p>
+                  <Link href="/clients" className="btn-primary mt-5">
+                    Go to clients
+                  </Link>
+                </>
+              )}
             </div>
-
-            {(inventory ?? []).length === 0 ? (
-              <div className="surface rounded-xl px-5 py-8 text-sm text-ink-500">
-                No prepaid credits yet. Ask an admin to allocate inventory or top up your wallet.
-              </div>
-            ) : (
-              <ul className="surface divide-y divide-sand-200 overflow-hidden rounded-xl">
-                {(inventory as InventoryRow[]).map((row) => (
-                  <li key={row.id} className="flex items-center justify-between gap-4 px-5 py-4">
-                    <div>
-                      <p className="font-semibold text-ink-900">
-                        {row.products?.name ?? row.product_id}
-                      </p>
-                      <p className="text-xs uppercase tracking-[0.12em] text-ink-400">
-                        {row.products?.sku ?? "SKU"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-display text-3xl font-semibold text-brand-700">
-                        {row.license_credits}
-                      </p>
-                      <p className="text-xs text-ink-500">
-                        {row.licenses_consumed} consumed
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
           </section>
         </div>
       )}

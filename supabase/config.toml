@@ -43,5 +43,8 @@ enable_confirmations = false
 [functions.provision-client]
 verify_jwt = true
 
+[functions.attach-domain]
+verify_jwt = true
+
 [functions.allocate-credits]
 verify_jwt = true

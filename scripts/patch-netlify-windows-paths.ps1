@@ -1,7 +1,8 @@
 # Patches Windows-built Netlify Next handler paths so they work on Linux.
 # Root cause: '\var\task\...' is parsed as JS escapes (\v, \t) on Linux.
 
-$handlerRoot = Join-Path $PSScriptRoot "apps\dashboard\.netlify\functions-internal"
+$repoRoot = Split-Path $PSScriptRoot -Parent
+$handlerRoot = Join-Path $repoRoot "apps\dashboard\.netlify\functions-internal"
 if (-not (Test-Path $handlerRoot)) {
   Write-Error "No Netlify functions build found at $handlerRoot. Run netlify build first."
   exit 1

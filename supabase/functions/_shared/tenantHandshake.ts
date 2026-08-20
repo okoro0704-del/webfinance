@@ -3,6 +3,13 @@
  * Edge Function signs the request with a shared HMAC secret.
  */
 
+export type TenantBranding = {
+  brandName: string;
+  logoUrl?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
+};
+
 export type TenantProvisionRequest = {
   clientId: string;
   distributorId: string;
@@ -10,6 +17,9 @@ export type TenantProvisionRequest = {
   displayName: string;
   slug: string;
   customDomain: string | null;
+  adminEmail: string;
+  adminFullName: string;
+  branding?: TenantBranding;
 };
 
 export type TenantProvisionResult = {
@@ -53,7 +63,7 @@ export async function provisionTenant(
     if (Deno.env.get("ALLOW_MOCK_INTEGRATIONS") === "true") {
       return {
         externalTenantId: `mock-tenant-${input.clientId}`,
-        adminEmail: `admin@${input.slug}.local`,
+        adminEmail: input.adminEmail,
         temporaryPassword: crypto.randomUUID().slice(0, 12),
         accessUrl: `https://${input.customDomain ?? `${input.slug}.example.com`}`,
       };
@@ -65,6 +75,9 @@ export async function provisionTenant(
     Deno.env.get(`${prefix}_HMAC_SECRET`) ?? Deno.env.get("TENANT_HMAC_SECRET");
   if (!secret) throw new Error(`Missing HMAC secret for ${product.sku}`);
 
+  const brandName = (input.branding?.brandName || input.displayName).slice(0, 120);
+  const adminFullName = (input.adminFullName || brandName || "Tenant Admin").slice(0, 120);
+
   const body = {
     client_id: input.clientId,
     distributor_id: input.distributorId,
@@ -72,6 +85,23 @@ export async function provisionTenant(
     display_name: input.displayName,
     slug: input.slug,
     custom_domain: input.customDomain,
+    portal_hostname: input.customDomain,
+    apps_hostname: `${input.slug}.apps.webfinance.app`,
+    admin_email: input.adminEmail,
+    admin_full_name: adminFullName,
+    // Branding for per-tenant login / chrome on MM & PM apps
+    brand_name: brandName,
+    company_name: brandName,
+    logo_url: input.branding?.logoUrl || null,
+    primary_color: input.branding?.primaryColor || null,
+    accent_color: input.branding?.accentColor || null,
+    branding: {
+      brand_name: brandName,
+      company_name: brandName,
+      logo_url: input.branding?.logoUrl || null,
+      primary_color: input.branding?.primaryColor || "#14594c",
+      accent_color: input.branding?.accentColor || null,
+    },
     timestamp: new Date().toISOString(),
   };
   const payload = JSON.stringify(body);
@@ -98,11 +128,13 @@ export async function provisionTenant(
 
   return {
     externalTenantId: String(data.tenant_id ?? data.external_tenant_id),
-    adminEmail: String(data.admin_email),
+    adminEmail: String(data.admin_email ?? input.adminEmail),
     temporaryPassword: data.temporary_password
       ? String(data.temporary_password)
       : undefined,
-    accessUrl: String(data.access_url ?? `https://${input.customDomain}`),
+    accessUrl: String(
+      data.access_url ?? `https://${input.customDomain ?? `${input.slug}.webfinance.app`}`,
+    ),
     raw: data,
   };
 }

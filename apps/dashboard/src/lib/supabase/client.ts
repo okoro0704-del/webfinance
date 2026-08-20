@@ -1,8 +1,12 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAnonKey, getSupabaseUrl } from "./env";
 
+let browserClient: SupabaseClient | null = null;
+
+/** Reuse one browser client — recreating per click slows logout/auth. */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+  if (browserClient) return browserClient;
+  browserClient = createBrowserClient(getSupabaseUrl(), getSupabaseAnonKey());
+  return browserClient;
 }
