@@ -14,4 +14,7 @@ After completing meaningful code or config changes in this monorepo or related a
    - Parcel Movement: Netlify site `7958037c-d19e-42ba-97f6-a308f78fa27d` (`safeogistics` / pm.webfinance.app)
    - Money Movement: Netlify site `c9400b72-b2fb-4803-9bb9-6c0ee521440c` (`aesthetic-stardust-5199e7` / mm.webfinance.app)
 
-Prefer production deploys (`--prod`). Report the live URL when done.
+Prefer production deploys (`--prod`). Pass `--site <id>` (and auth token if link races) so deploys never hit the wrong Netlify project. Report the live URL when done.
+
+- MM publish dir is `web/dist` (base = `web`).
+- PM/CP Next apps: use existing Windows deploy patterns (`--no-build` + `.netlify/static` + functions-internal when needed).
