@@ -5,12 +5,18 @@ export function AuthLayout({
   eyebrow,
   headline,
   points,
+  brandName,
+  partnerLabel,
 }: {
   children: React.ReactNode;
   eyebrow: string;
   headline: string;
   points: string[];
+  brandName?: string | null;
+  partnerLabel?: string | null;
 }) {
+  const whiteLabel = Boolean(brandName?.trim());
+
   return (
     <main className="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
       <section className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-14">
@@ -34,7 +40,12 @@ export function AuthLayout({
         />
 
         <div className="relative z-10">
-          <BrandMark tone="light" size="lg" />
+          <BrandMark
+            tone="light"
+            size="lg"
+            brandName={brandName}
+            partnerLabel={partnerLabel}
+          />
           <p className="mt-8 text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-200">
             {eyebrow}
           </p>
@@ -86,7 +97,7 @@ export function AuthLayout({
         </div>
 
         <p className="relative z-10 text-xs uppercase tracking-[0.16em] text-white/45">
-          Secure distributor workspace
+          {whiteLabel ? "Powered by WebFinance" : "Secure partner workspace"}
         </p>
       </section>
 

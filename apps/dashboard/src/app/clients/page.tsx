@@ -59,7 +59,11 @@ export default async function ClientsPage() {
   const loadError = productsErr?.message || clientsErr?.message || null;
 
   return (
-    <Shell companyName={distributor?.company_name ?? "Master control"} isAdmin={isAdmin}>
+    <Shell
+      companyName={distributor?.company_name ?? "Master control"}
+      isAdmin={isAdmin}
+      partnerTier={distributor?.partner_tier}
+    >
       <header className="animate-rise">
         <div className="section-rule" />
         <h1 className="page-title mt-4">Clients</h1>

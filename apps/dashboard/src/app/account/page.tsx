@@ -15,13 +15,21 @@ export default async function AccountPage() {
 
   const [{ data: profile }, { data: distributor }] = await Promise.all([
     supabase.from("profiles").select("role, email, full_name").eq("id", user.id).maybeSingle(),
-    supabase.from("distributors").select("company_name").eq("profile_id", user.id).maybeSingle(),
+    supabase
+      .from("distributors")
+      .select("company_name, partner_tier")
+      .eq("profile_id", user.id)
+      .maybeSingle(),
   ]);
 
   const isAdmin = profile?.role === "platform_admin";
 
   return (
-    <Shell companyName={distributor?.company_name ?? "Account"} isAdmin={isAdmin}>
+    <Shell
+      companyName={distributor?.company_name ?? "Account"}
+      isAdmin={isAdmin}
+      partnerTier={distributor?.partner_tier}
+    >
       <header className="animate-rise">
         <div className="section-rule" />
         <h1 className="page-title mt-4">Account</h1>

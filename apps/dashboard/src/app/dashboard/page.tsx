@@ -48,7 +48,11 @@ export default async function DashboardPage() {
       : { count: 0 };
 
   return (
-    <Shell companyName={distributor?.company_name} isAdmin={isAdmin}>
+    <Shell
+      companyName={distributor?.company_name}
+      isAdmin={isAdmin}
+      partnerTier={distributor?.partner_tier}
+    >
       <header className="animate-rise">
         <div className="section-rule" />
         <h1 className="page-title mt-4">Overview</h1>

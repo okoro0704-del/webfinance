@@ -101,16 +101,32 @@ export function Shell({
   children,
   companyName,
   isAdmin = false,
+  partnerTier,
 }: {
   children: React.ReactNode;
   companyName?: string;
   isAdmin?: boolean;
+  /** distributor | software_retailer — drives white-label subtitle */
+  partnerTier?: "distributor" | "software_retailer" | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [admin, setAdmin] = useState(isAdmin);
   const [signingOut, setSigningOut] = useState(false);
   const [, startTransition] = useTransition();
+
+  const whiteLabel = !admin && Boolean(companyName?.trim());
+  const partnerLabel = admin
+    ? "Master control"
+    : partnerTier === "software_retailer"
+      ? "Retailer panel"
+      : "Distributor panel";
+
+  useEffect(() => {
+    if (whiteLabel && companyName) {
+      document.title = `${companyName} · Powered by WebFinance`;
+    }
+  }, [whiteLabel, companyName]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -241,8 +257,13 @@ export function Shell({
             }}
           />
           <div className="relative flex h-full flex-col px-5 py-7">
-            <BrandMark tone="light" />
+            <BrandMark
+              tone="light"
+              brandName={whiteLabel ? companyName : null}
+              partnerLabel={partnerLabel}
+            />
 
+            {whiteLabel ? null : (
             <div className="mt-9 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400">
                 {admin ? "Master workspace" : "Workspace"}
@@ -251,8 +272,9 @@ export function Shell({
                 {companyName ?? "Unlinked account"}
               </p>
             </div>
+            )}
 
-            <div className="mt-8 flex-1">{sideNav}</div>
+            <div className={`${whiteLabel ? "mt-9" : "mt-8"} flex-1`}>{sideNav}</div>
 
             <button
               type="button"
@@ -268,10 +290,11 @@ export function Shell({
         <div className="min-w-0">
           <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-sand-200 bg-[#f7f5f1]/92 px-4 py-3 backdrop-blur-md pt-safe lg:hidden">
             <div className="min-w-0">
-              <BrandMark size="sm" />
-              <p className="mt-0.5 truncate text-[11px] font-medium text-ink-500">
-                {companyName ?? (admin ? "Master" : "Distributor")}
-              </p>
+              <BrandMark
+                size="sm"
+                brandName={whiteLabel ? companyName : null}
+                partnerLabel={partnerLabel}
+              />
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
@@ -323,7 +346,7 @@ export function Shell({
         </ul>
       </nav>
 
-      <InstallBanner />
+      <InstallBanner brandName={whiteLabel ? companyName : null} />
     </div>
   );
 }

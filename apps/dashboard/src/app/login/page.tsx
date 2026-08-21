@@ -5,13 +5,19 @@ import { useState } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { BrandMark } from "@/components/BrandMark";
 import { PasswordField } from "@/components/PasswordField";
+import { usePartnerBrandFromHost } from "@/lib/partner-brand";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const brand = usePartnerBrandFromHost();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const whiteLabel = Boolean(brand?.company_name);
+  const partnerLabel =
+    brand?.partner_tier === "software_retailer" ? "Retailer panel" : "Distributor panel";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,22 +30,38 @@ export default function LoginPage() {
       setError(signErr.message);
       return;
     }
-    // Hard navigate — faster than soft router + refresh after auth cookie write
     window.location.assign("/dashboard");
   }
 
   return (
     <AuthLayout
-      eyebrow="Distributor access"
-      headline="Sign in and ship client environments in minutes."
-      points={[
-        "One-click Deploy for Money Movement and Parcel Movement",
-        "Client portals, domains, and deliverables in one place",
-        "Request Master help when something needs fixing",
-      ]}
+      brandName={brand?.company_name}
+      partnerLabel={whiteLabel ? partnerLabel : "Partner access"}
+      eyebrow={whiteLabel ? partnerLabel : "Partner access"}
+      headline={
+        whiteLabel
+          ? `Sign in to ${brand!.company_name}.`
+          : "Sign in and ship client environments in minutes."
+      }
+      points={
+        whiteLabel
+          ? [
+              "Deploy Money Movement and Parcel Movement for your clients",
+              "Manage portals, domains, and deliverables in one place",
+              "Request Master help when something needs fixing",
+            ]
+          : [
+              "One-click Deploy for Money Movement and Parcel Movement",
+              "Client portals, domains, and deliverables in one place",
+              "Request Master help when something needs fixing",
+            ]
+      }
     >
       <div className="mb-8 lg:hidden">
-        <BrandMark />
+        <BrandMark
+          brandName={brand?.company_name}
+          partnerLabel={whiteLabel ? partnerLabel : "Control panel"}
+        />
       </div>
 
       <form
@@ -51,11 +73,18 @@ export default function LoginPage() {
           Welcome back
         </p>
         <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-900 sm:text-[2.1rem]">
-          Sign in to Webfinance
+          {whiteLabel ? `Sign in to ${brand!.company_name}` : "Sign in to WebFinance"}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-500">
-          Enter your distributor email and password to open the control panel.
+          {whiteLabel
+            ? "Enter your work email and password to open your branded control panel."
+            : "Enter your partner email and password to open the control panel."}
         </p>
+        {whiteLabel ? (
+          <p className="mt-2 text-[11px] font-medium tracking-wide text-ink-400">
+            Powered by WebFinance
+          </p>
+        ) : null}
 
         <div className="mt-8 space-y-4">
           <div>
@@ -103,12 +132,14 @@ export default function LoginPage() {
           )}
         </button>
 
-        <div className="mt-6 flex items-center justify-between gap-3 border-t border-sand-200 pt-5 text-sm">
-          <p className="text-ink-500">New partner?</p>
-          <Link href="/signup" className="font-semibold text-brand-700 hover:text-brand-800">
-            Create account
-          </Link>
-        </div>
+        {!whiteLabel ? (
+          <div className="mt-6 flex items-center justify-between gap-3 border-t border-sand-200 pt-5 text-sm">
+            <p className="text-ink-500">New partner?</p>
+            <Link href="/signup" className="font-semibold text-brand-700 hover:text-brand-800">
+              Create account
+            </Link>
+          </div>
+        ) : null}
       </form>
     </AuthLayout>
   );
