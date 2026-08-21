@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/Toast";
 
 async function sellUnits(input: { distributor_id: string; units: number }) {
   const supabase = createClient();
@@ -48,6 +49,7 @@ export function SellProductUnitsForm({
   unitsRemaining: number;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [units, setUnits] = useState("2");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,11 +71,15 @@ export function SellProductUnitsForm({
         units: Math.round(n),
       });
       const remaining = result.units_remaining ?? result.inventory_remaining;
-      setOk(`Sold ${Math.round(n)} deploy unit${Math.round(n) === 1 ? "" : "s"}. Stock now ${remaining ?? "—"}.`);
+      const msg = `Sold ${Math.round(n)} deploy unit${Math.round(n) === 1 ? "" : "s"}. Stock now ${remaining ?? "—"}.`;
+      setOk(msg);
+      toast.success(msg);
       setUnits("2");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sale failed");
+      const msg = err instanceof Error ? err.message : "Sale failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { deployClient } from "@/lib/deploy";
+import { useToast } from "@/components/Toast";
 
 export function DeployButton({
   clientId,
@@ -18,6 +19,7 @@ export function DeployButton({
   onDone?: () => void;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,10 +28,13 @@ export function DeployButton({
     setError(null);
     try {
       await deployClient(clientId, { force });
+      toast.success(force ? "Setup finished successfully." : "Client deployed successfully.");
       onDone?.();
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Deploy failed");
+      const msg = e instanceof Error ? e.message : "Deploy failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

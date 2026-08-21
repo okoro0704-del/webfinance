@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { emitNotifyEvent } from "@/lib/notify";
+import { useToast } from "@/components/Toast";
 
 export function CreateRequestForm({
   distributorId,
@@ -13,6 +14,7 @@ export function CreateRequestForm({
   clients: Array<{ id: string; display_name: string }>;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [clientId, setClientId] = useState("");
@@ -62,6 +64,7 @@ export function CreateRequestForm({
     setBody("");
     setClientId("");
     setOk("Request sent to Master.");
+    toast.success("Request sent to Master.");
     setLoading(false);
     router.refresh();
   }

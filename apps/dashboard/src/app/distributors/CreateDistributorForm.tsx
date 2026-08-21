@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createDistributor } from "@/lib/admin";
 import { PasswordField } from "@/components/PasswordField";
+import { useToast } from "@/components/Toast";
 
 type PartnerTier = "distributor" | "software_retailer";
 
 export function CreateDistributorForm() {
   const router = useRouter();
+  const toast = useToast();
   const [companyName, setCompanyName] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -43,6 +45,11 @@ export function CreateDistributorForm() {
           ? `Created ${tierLabel} ${result.email} → ${result.subdomain}${unitsNote}`
           : `Created ${tierLabel} ${result.email}${unitsNote}`,
       );
+      toast.success(
+        result.subdomain
+          ? `${tierLabel} created on ${result.subdomain}`
+          : `${tierLabel} created successfully`,
+      );
       setCompanyName("");
       setFullName("");
       setEmail("");
@@ -50,7 +57,9 @@ export function CreateDistributorForm() {
       setTier("distributor");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      const msg = err instanceof Error ? err.message : "Create failed";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

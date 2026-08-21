@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Product } from "@/lib/types";
+import { useToast } from "@/components/Toast";
 
 export function CreateClientForm({
   distributorId,
@@ -19,6 +20,7 @@ export function CreateClientForm({
   deployUnits?: number;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const unitsLeft = deployUnits ?? 0;
   const canCreate = !isRetailer || unitsLeft > 0;
   const [displayName, setDisplayName] = useState("");
@@ -114,13 +116,14 @@ export function CreateClientForm({
       const isDuplicate =
         insertErr.code === "23505" ||
         /clients_distributor_id_slug_key|duplicate key/i.test(insertErr.message);
-      setError(
-        isDuplicate
-          ? `Slug "${toSlug(slug || displayName)}" is already used. Pick a different slug.`
-          : insertErr.message,
-      );
+      const msg = isDuplicate
+        ? `Slug "${toSlug(slug || displayName)}" is already used. Pick a different slug.`
+        : insertErr.message;
+      setError(msg);
+      toast.error(msg);
       return;
     }
+    toast.success("Client draft created successfully.");
     setDisplayName("");
     setSlug("");
     setAdminEmail("");

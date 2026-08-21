@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Manrope } from "next/font/google";
 import { RegisterSW } from "@/components/RegisterSW";
+import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -50,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${manrope.variable} ${fraunces.variable} font-sans antialiased`}>
         <RegisterSW />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
