@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { emitNotifyEvent } from "@/lib/notify";
 
 export function CreateRequestForm({
   distributorId,
@@ -34,19 +35,27 @@ export function CreateRequestForm({
       return;
     }
 
-    const { error: insErr } = await supabase.from("support_requests").insert({
-      distributor_id: distributorId,
-      client_id: clientId || null,
-      created_by: user.id,
-      subject: subject.trim(),
-      body: body.trim(),
-      status: "open",
-    });
+    const { data: created, error: insErr } = await supabase
+      .from("support_requests")
+      .insert({
+        distributor_id: distributorId,
+        client_id: clientId || null,
+        created_by: user.id,
+        subject: subject.trim(),
+        body: body.trim(),
+        status: "open",
+      })
+      .select("id")
+      .single();
 
     if (insErr) {
       setLoading(false);
       setError(insErr.message);
       return;
+    }
+
+    if (created?.id) {
+      void emitNotifyEvent({ event: "support_request_created", request_id: created.id });
     }
 
     setSubject("");

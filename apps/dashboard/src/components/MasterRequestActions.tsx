@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { emitNotifyEvent } from "@/lib/notify";
 
 export function MasterRequestActions({
   requestId,
@@ -29,7 +30,12 @@ export function MasterRequestActions({
       .from("support_requests")
       .update(patch)
       .eq("id", requestId);
-    if (updErr) setError(updErr.message);
+    if (updErr) {
+      setError(updErr.message);
+      setLoading(false);
+      return;
+    }
+    void emitNotifyEvent({ event: "support_request_updated", request_id: requestId });
     setLoading(false);
     router.refresh();
   }

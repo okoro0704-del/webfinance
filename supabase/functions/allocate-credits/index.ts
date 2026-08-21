@@ -1,16 +1,18 @@
 /**
- * Platform-admin helper: top up wallet and/or allocate prepaid license credits.
+ * Platform-admin helper: top up wallet and/or allocate prepaid deploy units.
  * POST body:
  * {
  *   distributor_id: string,
- *   product_id?: string,
- *   license_credits?: number,
+ *   units?: number,              // generic deploy units (preferred)
+ *   license_credits?: number,    // alias of units
+ *   product_id?: string,         // ignored for unit sales (kept for compat)
  *   wallet_amount?: number,
  *   description?: string
  * }
  */
 
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { notifyProfiles } from "../_shared/notify.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
@@ -38,9 +40,18 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json();
-  const { distributor_id, product_id, license_credits, wallet_amount, description } = body;
+  const { distributor_id, product_id: _productId, wallet_amount, description } = body;
+  const units = Number(body.units ?? body.license_credits ?? 0);
 
   if (!distributor_id) return jsonResponse({ error: "distributor_id required" }, 400);
+
+  const { data: partner } = await admin
+    .from("distributors")
+    .select("id, company_name, profile_id, partner_tier")
+    .eq("id", distributor_id)
+    .maybeSingle();
+
+  if (!partner) return jsonResponse({ error: "Partner not found" }, 404);
 
   const result: Record<string, unknown> = {};
 
@@ -56,15 +67,25 @@ Deno.serve(async (req) => {
     result.wallet_balance = data;
   }
 
-  if (license_credits && product_id && Number(license_credits) > 0) {
-    const { data, error } = await admin.rpc("allocate_inventory_credits", {
+  if (units > 0) {
+    const { data, error } = await admin.rpc("allocate_deploy_units", {
       p_distributor_id: distributor_id,
-      p_product_id: product_id,
-      p_credits: Number(license_credits),
+      p_units: Math.round(units),
       p_actor: user.id,
     });
     if (error) return jsonResponse({ error: error.message }, 400);
-    result.inventory_remaining = data;
+    result.units_remaining = data;
+    result.inventory_remaining = data; // backward-compatible alias
+
+    if (partner.profile_id) {
+      await notifyProfiles(admin, [partner.profile_id], {
+        title: "Deploy units added",
+        body: `Master sold you ${Math.round(units)} deploy unit${Math.round(units) === 1 ? "" : "s"}. Stock now ${data}.`,
+        kind: "units_sold",
+        href: "/clients",
+        metadata: { units: Math.round(units), remaining: data, distributor_id },
+      });
+    }
   }
 
   return jsonResponse({ ok: true, ...result });

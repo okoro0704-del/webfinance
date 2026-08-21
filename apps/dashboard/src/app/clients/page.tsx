@@ -22,6 +22,7 @@ export default async function ClientsPage() {
 
   const isAdmin = profile?.role === "platform_admin";
   const isRetailer = distributor?.partner_tier === "software_retailer";
+  const deployUnits = distributor?.deploy_units ?? 0;
 
   if (!distributor && !isAdmin) {
     return (
@@ -51,25 +52,8 @@ export default async function ClientsPage() {
         .eq("distributor_id", distributor!.id)
         .order("created_at", { ascending: false });
 
-  const inventoryQuery =
-    distributor && isRetailer
-      ? supabase
-          .from("distributor_inventory")
-          .select("product_id, license_credits, products(sku, name)")
-          .eq("distributor_id", distributor.id)
-      : Promise.resolve({ data: null as null });
-
-  const [
-    { data: products, error: productsErr },
-    { data: clients, error: clientsErr },
-    { data: inventoryRows },
-  ] = await Promise.all([productsQuery, clientsQuery, inventoryQuery]);
-
-  const inventoryByProductId: Record<string, number> = {};
-  for (const row of inventoryRows ?? []) {
-    inventoryByProductId[row.product_id] = row.license_credits ?? 0;
-  }
-  const totalUnits = Object.values(inventoryByProductId).reduce((a, b) => a + b, 0);
+  const [{ data: products, error: productsErr }, { data: clients, error: clientsErr }] =
+    await Promise.all([productsQuery, clientsQuery]);
 
   const rows = clients ?? [];
   const loadError = productsErr?.message || clientsErr?.message || null;
@@ -83,7 +67,7 @@ export default async function ClientsPage() {
           {isAdmin
             ? "All tenants across partners. Tap a client to open details, deploy, suspend, or delete."
             : isRetailer
-              ? "Create tenants with prepaid product units. Deploy uses one unit per product. When stock runs out, Master sells you more."
+              ? "Create tenants with prepaid deploy units. Each Deploy uses one unit — pick any product. When stock runs out, Master sells you more."
               : "Create tenants on slug.webfinance.app. Tap a client to deploy, view login details, or connect a personal domain."}
         </p>
       </header>
@@ -94,23 +78,10 @@ export default async function ClientsPage() {
             Software retailer stock
           </p>
           <p className="mt-1 text-sm text-amber-950">
-            {totalUnits === 0
-              ? "No product units left. Contact Master to buy more before deploying."
-              : `${totalUnits} unit${totalUnits === 1 ? "" : "s"} remaining across products.`}
+            {deployUnits === 0
+              ? "No deploy units left. Contact Master to buy more before deploying."
+              : `${deployUnits} deploy unit${deployUnits === 1 ? "" : "s"} remaining — usable on any product.`}
           </p>
-          {(inventoryRows ?? []).length > 0 ? (
-            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-amber-900">
-              {(inventoryRows ?? []).map((row) => {
-                const prod = Array.isArray(row.products) ? row.products[0] : row.products;
-                return (
-                  <li key={row.product_id}>
-                    {prod?.name ?? "Product"}:{" "}
-                    <span className="font-semibold">{row.license_credits ?? 0}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
         </div>
       ) : null}
 
@@ -126,7 +97,7 @@ export default async function ClientsPage() {
               ]),
             )}
             isRetailer={isRetailer}
-            inventoryByProductId={isRetailer ? inventoryByProductId : undefined}
+            deployUnits={isRetailer ? deployUnits : undefined}
           />
         ) : (
           <div className="surface rounded-xl p-5 text-sm text-ink-500">
@@ -161,7 +132,7 @@ export default async function ClientsPage() {
             canManageDomainsFor={distributor?.id ?? null}
             deployDisabledWhenInactive={distributor?.status !== "active" && !isAdmin}
             isRetailer={isRetailer}
-            inventoryByProductId={isRetailer ? inventoryByProductId : undefined}
+            deployUnits={isRetailer ? deployUnits : undefined}
           />
         </section>
       </div>

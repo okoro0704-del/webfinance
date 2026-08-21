@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { InstallBanner } from "@/components/InstallBanner";
+import { NotificationBell } from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 
 const baseLinks = [
@@ -272,18 +273,26 @@ export function Shell({
                 {companyName ?? (admin ? "Master" : "Distributor")}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={signOut}
-              disabled={signingOut}
-              className="btn-secondary min-h-10 px-3 text-xs"
-            >
-              {signingOut ? "…" : "Sign out"}
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={signOut}
+                disabled={signingOut}
+                className="btn-secondary min-h-10 px-3 text-xs"
+              >
+                {signingOut ? "…" : "Sign out"}
+              </button>
+            </div>
           </header>
 
           <main className="min-w-0 px-3 py-4 pb-mobile-nav sm:px-5 sm:py-6 md:px-8 md:py-8 lg:pb-8">
-            <div className="mx-auto w-full max-w-5xl">{children}</div>
+            <div className="mx-auto w-full max-w-5xl">
+              <div className="mb-4 hidden justify-end lg:flex">
+                <NotificationBell />
+              </div>
+              {children}
+            </div>
           </main>
         </div>
       </div>

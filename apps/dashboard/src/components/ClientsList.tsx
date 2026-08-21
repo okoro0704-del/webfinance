@@ -24,7 +24,7 @@ export function ClientsList({
   canManageDomainsFor,
   deployDisabledWhenInactive,
   isRetailer = false,
-  inventoryByProductId,
+  deployUnits,
 }: {
   rows: ClientListItem[];
   isAdmin: boolean;
@@ -32,10 +32,11 @@ export function ClientsList({
   canManageDomainsFor: string | null;
   deployDisabledWhenInactive: boolean;
   isRetailer?: boolean;
-  /** Remaining prepaid units per product (retailers only). */
-  inventoryByProductId?: Record<string, number>;
+  /** Remaining product-agnostic deploy units (retailers only). */
+  deployUnits?: number;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const unitsLeft = deployUnits ?? 0;
 
   if (rows.length === 0) {
     return (
@@ -142,12 +143,9 @@ export function ClientsList({
                     <p className="text-xs text-signal-bad">{c.provision_error}</p>
                   ) : null}
 
-                  {isRetailer &&
-                  needsProductProvision(c) &&
-                  (inventoryByProductId?.[c.product_id] ?? 0) <= 0 ? (
+                  {isRetailer && needsProductProvision(c) && unitsLeft <= 0 ? (
                     <p className="text-xs text-amber-800">
-                      No units left for {c.products?.name ?? "this product"}. Ask Master to sell
-                      you more before Deploy.
+                      No deploy units left. Ask Master to sell you more before Deploy.
                     </p>
                   ) : null}
 
@@ -167,9 +165,7 @@ export function ClientsList({
                         c.status === "suspended" ||
                         c.status === "cancelled" ||
                         (c.status === "active" && !needsProductProvision(c)) ||
-                        (isRetailer &&
-                          needsProductProvision(c) &&
-                          (inventoryByProductId?.[c.product_id] ?? 0) <= 0)
+                        (isRetailer && needsProductProvision(c) && unitsLeft <= 0)
                       }
                     />
                   </div>

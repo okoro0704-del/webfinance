@@ -8,20 +8,19 @@ import type { Product } from "@/lib/types";
 export function CreateClientForm({
   distributorId,
   products,
-  inventoryByProductId,
   isRetailer = false,
+  deployUnits,
 }: {
   distributorId: string;
   products: Product[];
   productPortalBases?: Record<string, string>;
-  /** Remaining prepaid units per product (retailers only). */
-  inventoryByProductId?: Record<string, number>;
   isRetailer?: boolean;
+  /** Remaining product-agnostic deploy units (retailers only). */
+  deployUnits?: number;
 }) {
   const router = useRouter();
-  const stockedProducts = isRetailer
-    ? products.filter((p) => (inventoryByProductId?.[p.id] ?? 0) > 0)
-    : products;
+  const unitsLeft = deployUnits ?? 0;
+  const canCreate = !isRetailer || unitsLeft > 0;
   const [displayName, setDisplayName] = useState("");
   const [slug, setSlug] = useState("");
   const [adminFullName, setAdminFullName] = useState("");
@@ -29,7 +28,7 @@ export function CreateClientForm({
   const [brandName, setBrandName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#14594c");
-  const [productId, setProductId] = useState(stockedProducts[0]?.id ?? products[0]?.id ?? "");
+  const [productId, setProductId] = useState(products[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -59,9 +58,9 @@ export function CreateClientForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
-    if (isRetailer && (inventoryByProductId?.[productId] ?? 0) <= 0) {
+    if (isRetailer && unitsLeft <= 0) {
       setLoading(false);
-      setError("No units left for this product. Ask Master to sell you more before creating a client.");
+      setError("No deploy units left. Ask Master to sell you more before creating a client.");
       return;
     }
     const supabase = createClient();
@@ -141,7 +140,7 @@ export function CreateClientForm({
           Create a draft tenant, then open it in the list and Deploy. Their product login uses the
           branding below.
           {isRetailer
-            ? " Each Deploy uses one prepaid product unit from your stock."
+            ? " Each Deploy uses one prepaid unit from your stock (any product)."
             : ""}
         </p>
       </div>
@@ -262,26 +261,19 @@ export function CreateClientForm({
             className="input"
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
-            disabled={isRetailer && stockedProducts.length === 0}
+            disabled={!canCreate && isRetailer}
           >
-            {products.map((p) => {
-              const left = inventoryByProductId?.[p.id];
-              const soldOut = isRetailer && (left ?? 0) <= 0;
-              return (
-                <option key={p.id} value={p.id} disabled={soldOut}>
-                  {p.name}
-                  {isRetailer
-                    ? soldOut
-                      ? " · sold out"
-                      : ` · ${left ?? 0} unit${(left ?? 0) === 1 ? "" : "s"} left`
-                    : ""}
-                </option>
-              );
-            })}
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
           </select>
-          {isRetailer && stockedProducts.length === 0 ? (
-            <p className="mt-2 text-xs text-amber-800">
-              Stock empty — ask Master (Partners → Sell units) before creating more clients.
+          {isRetailer ? (
+            <p className="mt-2 text-xs text-ink-500">
+              {canCreate
+                ? `Your ${unitsLeft} deploy unit${unitsLeft === 1 ? "" : "s"} can be used for either product.`
+                : "Stock empty — ask Master (Partners → Sell units) before creating more clients."}
             </p>
           ) : null}
         </div>
@@ -293,7 +285,7 @@ export function CreateClientForm({
         <button
           className="btn-primary w-full sm:w-auto"
           type="submit"
-          disabled={loading || products.length === 0 || (isRetailer && stockedProducts.length === 0)}
+          disabled={loading || products.length === 0 || !canCreate}
         >
           {loading ? "Saving…" : "Create draft"}
         </button>

@@ -4,7 +4,6 @@ import { SellProductUnitsForm } from "./SellProductUnitsForm";
 import { Shell } from "@/components/Shell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { createClient } from "@/lib/supabase/server";
-import type { Product } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -25,43 +24,16 @@ export default async function DistributorsPage() {
     redirect("/dashboard");
   }
 
-  const [{ data: distributor }, { data: partners }, { data: products }, { data: inventory }] =
-    await Promise.all([
-      supabase.from("distributors").select("company_name").eq("profile_id", user.id).maybeSingle(),
-      supabase
-        .from("distributors")
-        .select(
-          "id, company_name, contact_email, status, created_at, subdomain, subdomain_slot, is_master, partner_tier",
-        )
-        .order("is_master", { ascending: false })
-        .order("subdomain_slot", { ascending: true }),
-      supabase
-        .from("products")
-        .select("id, sku, name, wholesale_unit_price")
-        .eq("is_active", true)
-        .order("sku"),
-      supabase
-        .from("distributor_inventory")
-        .select("distributor_id, product_id, license_credits, licenses_consumed, products(sku, name)"),
-    ]);
-
-  const inventoryByPartner = new Map<
-    string,
-    Array<{
-      product_id: string;
-      license_credits: number;
-      products?: { sku?: string; name?: string } | null;
-    }>
-  >();
-  for (const row of inventory ?? []) {
-    const list = inventoryByPartner.get(row.distributor_id) ?? [];
-    list.push({
-      product_id: row.product_id,
-      license_credits: row.license_credits,
-      products: Array.isArray(row.products) ? row.products[0] : row.products,
-    });
-    inventoryByPartner.set(row.distributor_id, list);
-  }
+  const [{ data: distributor }, { data: partners }] = await Promise.all([
+    supabase.from("distributors").select("company_name").eq("profile_id", user.id).maybeSingle(),
+    supabase
+      .from("distributors")
+      .select(
+        "id, company_name, contact_email, status, created_at, subdomain, subdomain_slot, is_master, partner_tier, deploy_units",
+      )
+      .order("is_master", { ascending: false })
+      .order("subdomain_slot", { ascending: true }),
+  ]);
 
   return (
     <Shell companyName={distributor?.company_name ?? "Master control"} isAdmin>
@@ -69,8 +41,8 @@ export default async function DistributorsPage() {
         <div className="section-rule" />
         <h1 className="page-title mt-4">Partners</h1>
         <p className="page-copy">
-          Create Distributors (unlimited deploys) or Software Retailers (prepaid product
-          units). After a retailer sells their starter stock, sell them more units below.
+          Create Distributors (unlimited deploys) or Software Retailers (prepaid deploy
+          units usable on any product). Sell more units when a retailer runs out.
         </p>
       </header>
 
@@ -89,8 +61,7 @@ export default async function DistributorsPage() {
               ) : (
                 (partners ?? []).map((d) => {
                   const tier = d.partner_tier ?? "distributor";
-                  const stock = inventoryByPartner.get(d.id) ?? [];
-                  const totalLeft = stock.reduce((sum, s) => sum + (s.license_credits ?? 0), 0);
+                  const unitsLeft = d.deploy_units ?? 0;
                   return (
                     <li key={d.id} className="px-5 py-4">
                       <div className="flex items-start justify-between gap-4">
@@ -129,7 +100,7 @@ export default async function DistributorsPage() {
                           {!d.is_master ? (
                             <p className="mt-1 text-xs text-ink-500">
                               {tier === "software_retailer"
-                                ? `${totalLeft} product unit${totalLeft === 1 ? "" : "s"} left`
+                                ? `${unitsLeft} deploy unit${unitsLeft === 1 ? "" : "s"} left (any product)`
                                 : "Unlimited deployments"}
                             </p>
                           ) : null}
@@ -141,8 +112,7 @@ export default async function DistributorsPage() {
                         <SellProductUnitsForm
                           distributorId={d.id}
                           companyName={d.company_name}
-                          products={(products ?? []) as Product[]}
-                          inventory={stock}
+                          unitsRemaining={unitsLeft}
                         />
                       ) : null}
                     </li>

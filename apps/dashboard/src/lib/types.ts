@@ -17,6 +17,8 @@ export type Distributor = {
   subdomain_slot?: number | null;
   is_master?: boolean;
   partner_tier?: "distributor" | "software_retailer";
+  deploy_units?: number;
+  deploy_units_consumed?: number;
   custom_domain?: string | null;
   domain_status?: string | null;
 };

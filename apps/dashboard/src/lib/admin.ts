@@ -8,6 +8,7 @@ export type CreateDistributorInput = {
   status?: "pending" | "active";
   partner_tier?: "distributor" | "software_retailer";
   wallet_amount?: number;
+  starter_units?: number;
   product_a_credits?: number;
   product_b_credits?: number;
 };
@@ -22,7 +23,8 @@ export type CreateDistributorResult = {
   wallet_balance?: number;
   subdomain?: string;
   subdomain_slot?: number;
-  starter_units?: { PRODUCT_A?: number; PRODUCT_B?: number };
+  starter_units?: number;
+  deploy_units?: number;
 };
 
 export async function createDistributor(

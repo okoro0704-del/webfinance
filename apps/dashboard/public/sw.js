@@ -1,4 +1,4 @@
-const CACHE = "wf-shell-v1";
+const CACHE = "wf-shell-v2";
 const PRECACHE = ["/", "/dashboard", "/login", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
@@ -21,7 +21,6 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for app pages; cache-first for static icons/manifest
   if (url.pathname.startsWith("/icons/") || url.pathname.endsWith(".webmanifest")) {
     event.respondWith(
       caches.match(req).then((cached) => cached || fetch(req).then((res) => {
@@ -44,4 +43,42 @@ self.addEventListener("fetch", (event) => {
         .catch(() => caches.match(req).then((c) => c || caches.match("/dashboard"))),
     );
   }
+});
+
+self.addEventListener("push", (event) => {
+  let data = { title: "WebFinance", body: "You have an update", href: "/dashboard" };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch {
+    try {
+      data.body = event.data?.text() || data.body;
+    } catch {
+      /* ignore */
+    }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "WebFinance", {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { href: data.href || "/dashboard", kind: data.kind },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const href = (event.notification.data && event.notification.data.href) || "/dashboard";
+  const url = new URL(href, self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ("focus" in client) {
+          client.navigate?.(url);
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    }),
+  );
 });

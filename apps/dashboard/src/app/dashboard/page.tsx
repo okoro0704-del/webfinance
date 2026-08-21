@@ -17,6 +17,7 @@ export default async function DashboardPage() {
   ]);
   const isAdmin = profile?.role === "platform_admin";
   const isRetailer = distributor?.partner_tier === "software_retailer";
+  const totalUnits = distributor?.deploy_units ?? 0;
 
   const { count: clientCount } = distributor
     ? await supabase
@@ -46,19 +47,6 @@ export default async function DashboardPage() {
           .in("status", ["open", "in_progress"])
       : { count: 0 };
 
-  const { data: inventoryRows } =
-    distributor && isRetailer
-      ? await supabase
-          .from("distributor_inventory")
-          .select("product_id, license_credits, products(sku, name)")
-          .eq("distributor_id", distributor.id)
-      : { data: null };
-
-  const totalUnits = (inventoryRows ?? []).reduce(
-    (sum, row) => sum + (row.license_credits ?? 0),
-    0,
-  );
-
   return (
     <Shell companyName={distributor?.company_name} isAdmin={isAdmin}>
       <header className="animate-rise">
@@ -68,7 +56,7 @@ export default async function DashboardPage() {
           {isAdmin
             ? "Create distributors and software retailers, review client tenants, and answer help requests."
             : isRetailer
-              ? "Sell prepaid product units to your clients. When stock runs out, ask Master to sell you more."
+              ? "Sell with prepaid deploy units usable on any product. When stock runs out, ask Master to sell you more."
               : "Create clients, deploy products, manage domains, and request help from Master when needed."}
         </p>
       </header>
@@ -88,26 +76,14 @@ export default async function DashboardPage() {
           {isRetailer ? (
             <section className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-800">
-                Product units in stock
+                Deploy units in stock
               </p>
               <p className="mt-2 font-display text-3xl font-semibold text-amber-950">
                 {totalUnits}
               </p>
-              <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-amber-900">
-                {(inventoryRows ?? []).length === 0 ? (
-                  <li>No inventory rows yet — contact Master after signup.</li>
-                ) : (
-                  (inventoryRows ?? []).map((row) => {
-                    const prod = Array.isArray(row.products) ? row.products[0] : row.products;
-                    return (
-                      <li key={row.product_id}>
-                        {prod?.name ?? "Product"}:{" "}
-                        <span className="font-semibold">{row.license_credits ?? 0}</span>
-                      </li>
-                    );
-                  })
-                )}
-              </ul>
+              <p className="mt-2 text-sm text-amber-900">
+                Usable on Money Movement or Parcel Movement — you choose when you deploy.
+              </p>
               {totalUnits === 0 ? (
                 <p className="mt-3 text-sm text-amber-900">
                   Stock empty. Master sells more units from Partners → your retailer row.
@@ -183,7 +159,7 @@ export default async function DashboardPage() {
               ) : isRetailer ? (
                 <>
                   <p className="metric-value mt-3">{totalUnits}</p>
-                  <p className="mt-2 text-sm text-ink-500">prepaid units left</p>
+                  <p className="mt-2 text-sm text-ink-500">deploy units left</p>
                   <Link href="/clients" className="btn-primary mt-5">
                     Go to clients
                   </Link>

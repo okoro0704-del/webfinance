@@ -36,7 +36,7 @@ export function CreateDistributorForm() {
         tier === "software_retailer" ? "Software Retailer" : "Distributor";
       const unitsNote =
         tier === "software_retailer"
-          ? " · starter stock: 1 Money Movement + 1 Parcel Movement"
+          ? " · starter stock: 2 deploy units (any product)"
           : " · unlimited deploys";
       setOk(
         result.subdomain
@@ -60,8 +60,8 @@ export function CreateDistributorForm() {
     <form onSubmit={onSubmit} className="surface rounded-xl p-6 shadow-soft">
       <h2 className="font-display text-xl font-semibold text-ink-900">Create partner</h2>
       <p className="mt-1 text-sm text-ink-500">
-        Distributors deploy unlimited tenants. Software Retailers start with 2 product
-        units and buy more from Master after they sell.
+        Distributors deploy unlimited tenants. Software Retailers start with 2 deploy
+        units (usable on any product) and buy more from Master after they sell.
       </p>
 
       <fieldset className="mt-6">
@@ -100,7 +100,7 @@ export function CreateDistributorForm() {
             />
             <span className="block font-semibold">Software Retailer</span>
             <span className="mt-1 block text-xs opacity-80">
-              Starts with 2 products · buy more units later
+              Starts with 2 units · any product · buy more later
             </span>
           </label>
         </div>

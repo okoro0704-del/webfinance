@@ -3,13 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Product } from "@/lib/types";
 
-async function sellUnits(input: {
-  distributor_id: string;
-  product_id: string;
-  license_credits: number;
-}) {
+async function sellUnits(input: { distributor_id: string; units: number }) {
   const supabase = createClient();
   const {
     data: { session },
@@ -25,11 +20,17 @@ async function sellUnits(input: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      ...input,
-      description: "Master sold product units to software retailer",
+      distributor_id: input.distributor_id,
+      units: input.units,
+      description: "Master sold deploy units to software retailer",
     }),
   });
-  const data = (await res.json()) as { ok?: boolean; error?: string; inventory_remaining?: number };
+  const data = (await res.json()) as {
+    ok?: boolean;
+    error?: string;
+    units_remaining?: number;
+    inventory_remaining?: number;
+  };
   if (!res.ok) throw new Error(data.error ?? "Sale failed");
   return data;
 }
@@ -37,33 +38,26 @@ async function sellUnits(input: {
 export function SellProductUnitsForm({
   distributorId,
   companyName,
-  products,
-  inventory,
+  unitsRemaining,
 }: {
   distributorId: string;
   companyName: string;
-  products: Product[];
-  inventory: Array<{
-    product_id: string;
-    license_credits: number;
-    products?: { sku?: string; name?: string } | null;
-  }>;
+  /** @deprecated unused — kept for call-site compatibility */
+  products?: unknown;
+  inventory?: unknown;
+  unitsRemaining: number;
 }) {
   const router = useRouter();
-  const [productId, setProductId] = useState(products[0]?.id ?? "");
   const [units, setUnits] = useState("2");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
-  const remainingForSelected =
-    inventory.find((i) => i.product_id === productId)?.license_credits ?? 0;
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const n = Number(units);
-    if (!productId || !Number.isFinite(n) || n < 1) {
-      setError("Choose a product and at least 1 unit.");
+    if (!Number.isFinite(n) || n < 1) {
+      setError("Enter at least 1 unit.");
       return;
     }
     setLoading(true);
@@ -72,14 +66,10 @@ export function SellProductUnitsForm({
     try {
       const result = await sellUnits({
         distributor_id: distributorId,
-        product_id: productId,
-        license_credits: Math.round(n),
+        units: Math.round(n),
       });
-      const productName =
-        products.find((p) => p.id === productId)?.name ?? "product";
-      setOk(
-        `Sold ${Math.round(n)} × ${productName}. Stock now ${result.inventory_remaining ?? "—"}.`,
-      );
+      const remaining = result.units_remaining ?? result.inventory_remaining;
+      setOk(`Sold ${Math.round(n)} deploy unit${Math.round(n) === 1 ? "" : "s"}. Stock now ${remaining ?? "—"}.`);
       setUnits("2");
       router.refresh();
     } catch (err) {
@@ -89,28 +79,18 @@ export function SellProductUnitsForm({
     }
   }
 
-  if (products.length === 0) return null;
-
   return (
     <form onSubmit={onSubmit} className="mt-3 space-y-3 rounded-lg border border-sand-200 bg-sand-50/80 p-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-400">
-        Sell units to {companyName}
+        Sell deploy units to {companyName}
       </p>
-      <div className="grid gap-2 sm:grid-cols-[1.4fr_0.6fr_auto]">
-        <select
-          className="input"
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-          aria-label="Product"
-        >
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} ({p.sku}) · have {inventory.find((i) => i.product_id === p.id)?.license_credits ?? 0}
-            </option>
-          ))}
-        </select>
+      <p className="text-xs text-ink-500">
+        Units are not tied to a product — the retailer chooses Money Movement or Parcel
+        Movement when they deploy. Current stock: {unitsRemaining}
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
         <input
-          className="input"
+          className="input max-w-[8rem]"
           type="number"
           min={1}
           max={500}
@@ -119,12 +99,9 @@ export function SellProductUnitsForm({
           aria-label="Units to sell"
         />
         <button type="submit" className="btn-primary min-h-11 text-xs" disabled={loading}>
-          {loading ? "Selling…" : "Sell"}
+          {loading ? "Selling…" : "Sell units"}
         </button>
       </div>
-      <p className="text-[11px] text-ink-500">
-        Current stock for selected product: {remainingForSelected}
-      </p>
       {error ? <p className="text-xs text-signal-bad">{error}</p> : null}
       {ok ? <p className="text-xs text-brand-800">{ok}</p> : null}
     </form>

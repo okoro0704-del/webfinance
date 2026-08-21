@@ -14,6 +14,7 @@
  */
 
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { notifyProfiles } from "../_shared/notify.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase.ts";
 import {
   initiateSsl,
@@ -441,6 +442,34 @@ Deno.serve(async (req) => {
       .eq("id", job.id)
       .select("*")
       .single();
+
+    const debitInfo = (Array.isArray(reserve) ? reserve[0] : reserve) as
+      | { inventory_remaining?: number | null }
+      | null;
+    try {
+      const { data: owner } = await admin
+        .from("distributors")
+        .select("profile_id, partner_tier, deploy_units, company_name")
+        .eq("id", distributor.id)
+        .maybeSingle();
+      if (owner?.profile_id) {
+        const remaining =
+          debitInfo?.inventory_remaining ?? owner.deploy_units ?? null;
+        const stockNote =
+          owner.partner_tier === "software_retailer" && remaining !== null
+            ? ` ${remaining} deploy unit${remaining === 1 ? "" : "s"} left.`
+            : "";
+        await notifyProfiles(admin, [owner.profile_id], {
+          title: "Client deployed",
+          body: `${client.display_name} is live.${stockNote}`,
+          kind: "client_deployed",
+          href: "/clients",
+          metadata: { client_id: client.id, remaining },
+        });
+      }
+    } catch (notifyErr) {
+      console.error("deploy notify failed", notifyErr);
+    }
 
     return jsonResponse({
       ok: true,

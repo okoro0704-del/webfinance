@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "@/components/ChangePasswordForm";
+import { PushNotificationSetup } from "@/components/PushNotificationSetup";
 import { Shell } from "@/components/Shell";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +31,8 @@ export default async function AccountPage() {
         </p>
       </header>
 
-      <div className="mt-8 animate-rise-delayed">
+      <div className="mt-8 space-y-6 animate-rise-delayed">
+        <PushNotificationSetup />
         <ChangePasswordForm />
       </div>
     </Shell>

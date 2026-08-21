@@ -6,12 +6,14 @@
  *   status?: "pending" | "active",
  *   partner_tier?: "distributor" | "software_retailer",
  *   wallet_amount?: number,
- *   product_a_credits?: number,  // retailers default to 1
- *   product_b_credits?: number   // retailers default to 1 (2 products total)
+ *   starter_units?: number,   // retailers default to 2 (product-agnostic)
+ *   product_a_credits?: number, // legacy ignored — folded into starter_units
+ *   product_b_credits?: number
  * }
  */
 
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
+import { notifyProfiles } from "../_shared/notify.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
@@ -79,6 +81,7 @@ Deno.serve(async (req) => {
       status,
       wallet_balance: 0,
       partner_tier,
+      deploy_units: 0,
     })
     .select("*")
     .single();
@@ -112,47 +115,46 @@ Deno.serve(async (req) => {
     result.wallet_balance = data;
   }
 
-  async function allocateSku(sku: string, credits: number) {
-    if (credits <= 0) return;
-    const { data: product } = await admin.from("products").select("id").eq("sku", sku).single();
-    if (!product) throw new Error(`Product ${sku} not found`);
-    const { data, error } = await admin.rpc("allocate_inventory_credits", {
+  // Retailers start with 2 product-agnostic deploy units (Master may override).
+  let starterUnits = 0;
+  if (partner_tier === "software_retailer") {
+    if (body.starter_units !== undefined && body.starter_units !== null) {
+      starterUnits = Math.max(0, Math.round(Number(body.starter_units)));
+    } else {
+      const legacyA = Number(body.product_a_credits ?? 0);
+      const legacyB = Number(body.product_b_credits ?? 0);
+      starterUnits = legacyA + legacyB > 0 ? Math.round(legacyA + legacyB) : 2;
+    }
+  }
+
+  if (starterUnits > 0) {
+    const { data, error } = await admin.rpc("allocate_deploy_units", {
       p_distributor_id: distributor.id,
-      p_product_id: product.id,
-      p_credits: credits,
+      p_units: starterUnits,
       p_actor: user.id,
     });
-    if (error) throw new Error(error.message);
-    result[`${sku.toLowerCase()}_credits`] = data;
+    if (error) {
+      return jsonResponse(
+        { error: error.message, ...result },
+        400,
+      );
+    }
+    result.deploy_units = data;
+    result.starter_units = starterUnits;
   }
 
-  // Retailers start with 2 product units (1 Money Movement + 1 Parcel Movement)
-  // unless Master overrides the counts explicitly.
-  const defaultA = partner_tier === "software_retailer" ? 1 : 0;
-  const defaultB = partner_tier === "software_retailer" ? 1 : 0;
-  const productACredits =
-    body.product_a_credits === undefined || body.product_a_credits === null
-      ? defaultA
-      : Number(body.product_a_credits);
-  const productBCredits =
-    body.product_b_credits === undefined || body.product_b_credits === null
-      ? defaultB
-      : Number(body.product_b_credits);
-
-  try {
-    await allocateSku("PRODUCT_A", productACredits);
-    await allocateSku("PRODUCT_B", productBCredits);
-  } catch (e) {
-    return jsonResponse(
-      { error: e instanceof Error ? e.message : "Credit allocation failed", ...result },
-      400,
-    );
-  }
-
-  result.starter_units = {
-    PRODUCT_A: productACredits,
-    PRODUCT_B: productBCredits,
-  };
+  await notifyProfiles(admin, [created.user.id], {
+    title:
+      partner_tier === "software_retailer"
+        ? "Software Retailer account ready"
+        : "Distributor account ready",
+    body:
+      partner_tier === "software_retailer"
+        ? `Welcome — you start with ${starterUnits} deploy units usable on any product.`
+        : "Welcome — you can deploy unlimited client tenants.",
+    kind: "partner_created",
+    href: "/dashboard",
+  });
 
   return jsonResponse(result);
 });
