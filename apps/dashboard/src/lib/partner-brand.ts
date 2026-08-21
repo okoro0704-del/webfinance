@@ -9,19 +9,25 @@ export type PartnerBrand = {
   subdomain: string | null;
 };
 
+/** True on Master apex hosts — always keep WebFinance branding. */
+export function isMasterHost(hostname?: string | null) {
+  const host = (hostname ?? "").toLowerCase().split(":")[0];
+  return (
+    host === "webfinance.app" ||
+    host === "www.webfinance.app" ||
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".netlify.app")
+  );
+}
+
 export function usePartnerBrandFromHost() {
   const [brand, setBrand] = useState<PartnerBrand | null>(null);
 
   useEffect(() => {
     const host = window.location.hostname.toLowerCase();
-    if (
-      host === "webfinance.app" ||
-      host === "www.webfinance.app" ||
-      host === "localhost" ||
-      host.endsWith(".netlify.app")
-    ) {
-      return;
-    }
+    // Master / local / Netlify preview → WebFinance brand only
+    if (isMasterHost(host)) return;
 
     const supabase = createClient();
     void supabase

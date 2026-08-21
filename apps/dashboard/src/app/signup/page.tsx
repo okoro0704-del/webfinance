@@ -2,20 +2,30 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { BrandMark } from "@/components/BrandMark";
 import { PasswordField } from "@/components/PasswordField";
+import { isMasterHost, usePartnerBrandFromHost } from "@/lib/partner-brand";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
   const router = useRouter();
+  const brand = usePartnerBrandFromHost();
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Partner portals should not show WebFinance public signup — send them to login.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isMasterHost(window.location.hostname) && brand?.company_name) {
+      router.replace("/login");
+    }
+  }, [brand, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
