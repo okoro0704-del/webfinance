@@ -14,6 +14,7 @@
 
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { notifyProfiles } from "../_shared/notify.ts";
+import { ensurePartnerPortalDns } from "../_shared/netlifyDns.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
@@ -155,6 +156,17 @@ Deno.serve(async (req) => {
     kind: "partner_created",
     href: "/dashboard",
   });
+
+  // Ensure dN / rN.webfinance.app resolves on Netlify DNS + CP aliases.
+  if (distributor.subdomain) {
+    try {
+      result.portal_dns = await ensurePartnerPortalDns(distributor.subdomain);
+    } catch (err) {
+      result.portal_dns = {
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
 
   return jsonResponse(result);
 });

@@ -1,5 +1,6 @@
 /**
- * Provision {slug}.webfinance.app DNS + Netlify domain alias for product apps.
+ * Provision {slug}.webfinance.app DNS + Netlify domain alias for product apps
+ * and partner control-panel hosts (dN / rN).
  */
 
 export type NetlifyDnsResult = {
@@ -10,6 +11,11 @@ export type NetlifyDnsResult = {
   alias?: unknown;
   reason?: string;
 };
+
+const CP_SITE_ID =
+  Deno.env.get("CP_NETLIFY_SITE_ID") ?? "24202d75-e5e1-4e4a-a5ea-bf5a3adc88c1";
+const CP_NETLIFY_HOST =
+  Deno.env.get("CP_NETLIFY_HOST") ?? "webfinance-distributor-cp.netlify.app";
 
 function productTarget(sku: string): { host: string; siteId: string | null } {
   const isPm = sku.toUpperCase().includes("PRODUCT_B") || sku.toUpperCase() === "PM";
@@ -25,25 +31,27 @@ function productTarget(sku: string): { host: string; siteId: string | null } {
   };
 }
 
-export async function ensureManagedTenantDns(
-  portalHostname: string,
-  productSku: string,
-): Promise<NetlifyDnsResult> {
+async function upsertHostnameDns(opts: {
+  hostname: string;
+  target: string;
+  siteId: string | null;
+}): Promise<NetlifyDnsResult> {
   const token = Deno.env.get("NETLIFY_AUTH_TOKEN") ?? Deno.env.get("NETLIFY_TOKEN");
   const zoneId = Deno.env.get("NETLIFY_DNS_ZONE_ID") ?? "6a6fb4bdf207a902ca2184d3";
+  const { hostname, target, siteId } = opts;
+
   if (!token) {
-    return { skipped: true, hostname: portalHostname, reason: "NETLIFY_AUTH_TOKEN not set" };
+    return { skipped: true, hostname, reason: "NETLIFY_AUTH_TOKEN not set" };
   }
-  if (!portalHostname.endsWith(".webfinance.app")) {
-    return { skipped: true, hostname: portalHostname, reason: "not a managed webfinance.app host" };
+  if (!hostname.endsWith(".webfinance.app")) {
+    return { skipped: true, hostname, reason: "not a managed webfinance.app host" };
   }
 
-  const label = portalHostname.replace(/\.webfinance\.app$/i, "");
+  const label = hostname.replace(/\.webfinance\.app$/i, "");
   if (!label || label.includes(".")) {
-    return { skipped: true, hostname: portalHostname, reason: "unexpected hostname shape" };
+    return { skipped: true, hostname, reason: "unexpected hostname shape" };
   }
 
-  const { host: target, siteId } = productTarget(productSku);
   const headers = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
@@ -78,7 +86,7 @@ export async function ensureManagedTenantDns(
       const siteRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, { headers });
       const site = await siteRes.json();
       const aliases: string[] = Array.isArray(site.domain_aliases) ? [...site.domain_aliases] : [];
-      if (!aliases.includes(portalHostname)) aliases.push(portalHostname);
+      if (!aliases.includes(hostname)) aliases.push(hostname);
       const upd = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
         method: "PUT",
         headers,
@@ -90,5 +98,29 @@ export async function ensureManagedTenantDns(
     }
   }
 
-  return { hostname: portalHostname, target, dns, alias };
+  return { hostname, target, dns, alias };
 }
+
+export async function ensureManagedTenantDns(
+  portalHostname: string,
+  productSku: string,
+): Promise<NetlifyDnsResult> {
+  const { host: target, siteId } = productTarget(productSku);
+  return upsertHostnameDns({ hostname: portalHostname, target, siteId });
+}
+
+/** Partner control-panel hosts: d1…dN / r1…rN → CP Netlify site. */
+export async function ensurePartnerPortalDns(
+  subdomain: string | null | undefined,
+): Promise<NetlifyDnsResult> {
+  const hostname = String(subdomain ?? "").trim().toLowerCase();
+  if (!hostname) {
+    return { skipped: true, hostname: "", reason: "no subdomain" };
+  }
+  return upsertHostnameDns({
+    hostname,
+    target: CP_NETLIFY_HOST,
+    siteId: CP_SITE_ID,
+  });
+}
+
