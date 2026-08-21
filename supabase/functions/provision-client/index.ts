@@ -415,6 +415,12 @@ Deno.serve(async (req) => {
       portal_url: portalUrl,
       website: portalUrl,
       brand_name: brandName,
+      logo_url:
+        typeof brandingMeta.logo_url === "string" ? brandingMeta.logo_url : null,
+      primary_color:
+        typeof brandingMeta.primary_color === "string"
+          ? brandingMeta.primary_color
+          : "#14594c",
       issued_at: new Date().toISOString(),
     };
 

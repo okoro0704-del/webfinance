@@ -432,6 +432,8 @@ export async function initiateSslMock(hostname: string): Promise<{ mode: string;
 }
 
 export function mockExternalDomain(hostname: string) {
+  const target = cnameTarget();
+  const www = hostname.startsWith("www.") ? hostname : `www.${hostname}`;
   return {
     mode: "mock",
     live: false,
@@ -440,9 +442,15 @@ export function mockExternalDomain(hostname: string) {
     instructions: [
       {
         type: "CNAME",
+        name: www,
+        value: target,
+        purpose: "Recommended — point www at Webfinance",
+      },
+      {
+        type: "ALIAS / ANAME (or CNAME if allowed)",
         name: hostname,
-        value: cnameTarget(),
-        purpose: "Point your domain at Webfinance (required)",
+        value: target,
+        purpose: "Optional apex — use if your DNS host supports ALIAS/ANAME",
       },
     ] as DnsInstruction[],
     sslStatus: "pending_validation",

@@ -128,6 +128,13 @@ export function ClientsList({
                     credentials={c.credentials_payload}
                     pendingProvision={needsProductProvision(c)}
                     productSku={c.products?.sku}
+                    branding={
+                      ((c as { metadata?: { branding?: {
+                        brand_name?: string;
+                        logo_url?: string;
+                        primary_color?: string;
+                      } } }).metadata?.branding) ?? null
+                    }
                   />
 
                   {canDomains ? (

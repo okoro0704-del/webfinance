@@ -48,6 +48,8 @@ export type ClientRow = {
     portal_url?: string;
     website?: string;
     brand_name?: string;
+    logo_url?: string;
+    primary_color?: string;
     client_login_url?: string;
     admin_dashboard_url?: string;
   } | null;

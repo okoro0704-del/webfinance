@@ -17,6 +17,7 @@ export function DomainDnsInstructions({
 }) {
   const host = domain.replace(/^https?:\/\//, "").replace(/\/+$/, "").toLowerCase();
   if (!host) return null;
+  const www = host.startsWith("www.") ? host : `www.${host}`;
 
   const rows =
     instructions && instructions.length > 0
@@ -24,9 +25,15 @@ export function DomainDnsInstructions({
       : [
           {
             type: "CNAME",
+            name: www,
+            value: target,
+            purpose: "Recommended — point www at Webfinance",
+          } satisfies DnsInstruction,
+          {
+            type: "ALIAS / ANAME (or CNAME if allowed)",
             name: host,
             value: target,
-            purpose: "Send your website address to Webfinance",
+            purpose: "Optional apex — use if your DNS host supports it",
           } satisfies DnsInstruction,
         ];
 
@@ -40,7 +47,9 @@ export function DomainDnsInstructions({
         <li>
           <span className="font-semibold text-ink-900">Open your domain account</span>
           <p className="mt-1 text-ink-600">
-            Sign in where you bought the domain (Namecheap, GoDaddy, Google Domains, etc.).
+            Sign in where you bought the domain (Namecheap, GoDaddy, Google Domains, Hostinger, etc.).
+            If nameservers show <strong>dns-parking</strong>, switch to your registrar&apos;s real DNS
+            first — parking DNS will not stay connected.
           </p>
         </li>
         <li>
@@ -51,11 +60,11 @@ export function DomainDnsInstructions({
           </p>
         </li>
         <li>
-          <span className="font-semibold text-ink-900">Add this record</span>
+          <span className="font-semibold text-ink-900">Add these records</span>
           <p className="mt-1 text-ink-600">
             {autoMode
-              ? "Copy the values below exactly. After DNS updates, we turn on HTTPS for you."
-              : "You own and pay for this domain. Webfinance only uses it after you point DNS here."}
+              ? "Copy the values below exactly. Prefer the www record — apex CNAME is often blocked. After DNS updates, we turn on HTTPS for you."
+              : "Prefer www. You own and pay for this domain; Webfinance only uses it after DNS points here."}
           </p>
           <ul className="mt-3 space-y-3">
             {rows.map((row, i) => (
@@ -81,7 +90,8 @@ export function DomainDnsInstructions({
           <p className="mt-1 text-ink-600">
             Changes often take 5–60 minutes. Keep using your free{" "}
             <span className="font-medium text-ink-800">.webfinance.app</span> link until status says{" "}
-            <strong>live</strong>.
+            <strong>live</strong>. Use{" "}
+            <span className="font-mono text-ink-800">https://{www}</span> once DNS is set.
           </p>
         </li>
       </ol>

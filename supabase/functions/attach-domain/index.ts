@@ -10,6 +10,10 @@ import {
   verifyExternalDomain,
   type DnsInstruction,
 } from "../_shared/cloudflare.ts";
+import {
+  provisionNetlifyCustomDomain,
+  verifyNetlifyCustomDomain,
+} from "../_shared/netlifyCustomDomain.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase.ts";
 
 type Scope = "client" | "distributor";
@@ -115,10 +119,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === "verify") {
-      return await verifyAndPersist("distributor", dist.id, domain, dist.metadata ?? {});
+      return await verifyAndPersist("distributor", dist.id, domain, dist.metadata ?? {}, null);
     }
 
-    return await attachAndPersist("distributor", dist.id, domain, dist.metadata ?? {});
+    return await attachAndPersist("distributor", dist.id, domain, dist.metadata ?? {}, null);
   }
 
   // client scope
@@ -175,11 +179,33 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (action === "verify") {
-    return await verifyAndPersist("client", client.id, domain, client.metadata ?? {});
+  let productSku: string | null = null;
+  if (client.product_id) {
+    const { data: product } = await admin
+      .from("products")
+      .select("sku")
+      .eq("id", client.product_id)
+      .maybeSingle();
+    productSku = product?.sku ?? null;
   }
 
-  return await attachAndPersist("client", client.id, domain, client.metadata ?? {});
+  if (action === "verify") {
+    return await verifyAndPersist(
+      "client",
+      client.id,
+      domain,
+      client.metadata ?? {},
+      productSku,
+    );
+  }
+
+  return await attachAndPersist(
+    "client",
+    client.id,
+    domain,
+    client.metadata ?? {},
+    productSku,
+  );
 });
 
 async function attachAndPersist(
@@ -187,10 +213,14 @@ async function attachAndPersist(
   entityId: string,
   domain: string,
   existingMeta: Record<string, unknown>,
+  productSku: string | null,
 ) {
   const admin = createServiceClient();
   const table = scope === "client" ? "clients" : "distributors";
   const hasCf = Boolean(Deno.env.get("CLOUDFLARE_API_TOKEN"));
+  const hasNetlify = Boolean(
+    Deno.env.get("NETLIFY_AUTH_TOKEN") ?? Deno.env.get("NETLIFY_TOKEN"),
+  );
   const allowMock = Deno.env.get("ALLOW_MOCK_INTEGRATIONS") === "true";
 
   await admin
@@ -212,17 +242,25 @@ async function attachAndPersist(
 
   let result:
     | ReturnType<typeof mockExternalDomain>
-    | Awaited<ReturnType<typeof provisionExternalDomain>>;
+    | Awaited<ReturnType<typeof provisionExternalDomain>>
+    | Awaited<ReturnType<typeof provisionNetlifyCustomDomain>>;
 
   try {
     if (hasCf) {
       result = await provisionExternalDomain(domain);
+    } else if (hasNetlify) {
+      result = await provisionNetlifyCustomDomain({
+        hostname: domain,
+        scope,
+        productSku,
+      });
     } else if (allowMock) {
       result = mockExternalDomain(domain);
     } else {
       result = mockExternalDomain(domain);
       result.detail = {
-        warning: "CLOUDFLARE_API_TOKEN not set — DNS instructions only until CF is configured",
+        warning:
+          "CLOUDFLARE_API_TOKEN / NETLIFY_AUTH_TOKEN not set — DNS instructions only",
       };
     }
   } catch (err) {
@@ -281,14 +319,63 @@ async function verifyAndPersist(
   entityId: string,
   domain: string,
   existingMeta: Record<string, unknown>,
+  productSku: string | null,
 ) {
   const admin = createServiceClient();
   const table = scope === "client" ? "clients" : "distributors";
   const hasCf = Boolean(Deno.env.get("CLOUDFLARE_API_TOKEN"));
+  const hasNetlify = Boolean(
+    Deno.env.get("NETLIFY_AUTH_TOKEN") ?? Deno.env.get("NETLIFY_TOKEN"),
+  );
   const allowMock = Deno.env.get("ALLOW_MOCK_INTEGRATIONS") === "true";
 
+  if (!hasCf && hasNetlify) {
+    try {
+      const verified = await verifyNetlifyCustomDomain({
+        hostname: domain,
+        scope,
+        productSku,
+      });
+      const domainStatus = verified.live ? "live" : "dns_pending";
+      await admin
+        .from(table)
+        .update({
+          domain_status: domainStatus,
+          ssl_status: verified.sslStatus,
+          metadata: {
+            ...existingMeta,
+            domain_automation: {
+              ...(typeof existingMeta.domain_automation === "object" &&
+              existingMeta.domain_automation
+                ? (existingMeta.domain_automation as object)
+                : {}),
+              mode: verified.mode,
+              instructions: verified.instructions,
+              detail: verified.detail,
+              verified_at: new Date().toISOString(),
+            },
+          },
+        })
+        .eq("id", entityId);
+
+      return jsonResponse({
+        ok: true,
+        domain,
+        domain_status: domainStatus,
+        live: verified.live,
+        ssl_status: verified.sslStatus,
+        instructions: verified.instructions,
+        message: verified.live
+          ? "Domain is live with SSL"
+          : "Still waiting for DNS/SSL — point www (and apex if supported) at the CNAME target.",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return jsonResponse({ error: message, domain_status: "failed" }, 502);
+    }
+  }
+
   if (!hasCf) {
-    // Without CF, auto-promote after attach in mock so UX can be demoed
     if (allowMock) {
       await admin
         .from(table)
@@ -323,7 +410,7 @@ async function verifyAndPersist(
       domain_status: "dns_pending",
       live: false,
       instructions: mockExternalDomain(domain).instructions,
-      message: "Waiting for Cloudflare configuration",
+      message: "Waiting for Netlify or Cloudflare configuration",
     });
   }
 
