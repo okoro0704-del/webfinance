@@ -8,6 +8,9 @@ export type TenantBranding = {
   logoUrl?: string | null;
   primaryColor?: string | null;
   accentColor?: string | null;
+  dashboardTemplate?: string | null;
+  dashboardStyle?: string | null;
+  featureFlags?: Record<string, boolean> | null;
 };
 
 export type TenantProvisionRequest = {
@@ -101,7 +104,13 @@ export async function provisionTenant(
       logo_url: input.branding?.logoUrl || null,
       primary_color: input.branding?.primaryColor || "#14594c",
       accent_color: input.branding?.accentColor || null,
+      dashboard_template: input.branding?.dashboardTemplate || null,
+      dashboard_style: input.branding?.dashboardStyle || null,
+      feature_flags: input.branding?.featureFlags || null,
     },
+    dashboard_template: input.branding?.dashboardTemplate || null,
+    dashboard_style: input.branding?.dashboardStyle || null,
+    feature_flags: input.branding?.featureFlags || null,
     timestamp: new Date().toISOString(),
   };
   const payload = JSON.stringify(body);

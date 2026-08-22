@@ -393,6 +393,19 @@ Deno.serve(async (req) => {
           typeof brandingMeta.accent_color === "string"
             ? brandingMeta.accent_color
             : null,
+        dashboardTemplate:
+          typeof brandingMeta.dashboard_template === "string"
+            ? brandingMeta.dashboard_template
+            : null,
+        dashboardStyle:
+          typeof brandingMeta.dashboard_style === "string"
+            ? brandingMeta.dashboard_style
+            : null,
+        featureFlags:
+          brandingMeta.feature_flags &&
+          typeof brandingMeta.feature_flags === "object"
+            ? (brandingMeta.feature_flags as Record<string, boolean>)
+            : null,
       },
     });
 

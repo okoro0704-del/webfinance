@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ClientDomainActions } from "@/components/ClientDomainActions";
 import { ClientLifecycleActions } from "@/components/ClientLifecycleActions";
+import { ClientTemplatePanel } from "@/components/ClientTemplatePanel";
 import { DeployButton } from "@/components/DeployButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { TenantDeliverables } from "@/components/TenantDeliverables";
@@ -135,6 +136,15 @@ export function ClientsList({
                         primary_color?: string;
                       } } }).metadata?.branding) ?? null
                     }
+                  />
+
+                  <ClientTemplatePanel
+                    clientId={c.id}
+                    productSku={c.products?.sku}
+                    metadata={
+                      (c as { metadata?: Record<string, unknown> }).metadata ?? null
+                    }
+                    externalTenantId={c.external_tenant_id}
                   />
 
                   {canDomains ? (

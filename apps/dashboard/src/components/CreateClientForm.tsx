@@ -1,8 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { TemplatePickerField } from "@/components/ClientTemplatePanel";
 import { createClient } from "@/lib/supabase/client";
+import {
+  defaultTemplateId,
+  productKindFromSku,
+  resolveTemplate,
+} from "@/lib/product-templates";
 import type { Product } from "@/lib/types";
 import { useToast } from "@/components/Toast";
 
@@ -33,6 +39,14 @@ export function CreateClientForm({
   const [productId, setProductId] = useState(products[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const selectedProduct = products.find((p) => p.id === productId);
+  const productKind = productKindFromSku(selectedProduct?.sku) ?? "mm";
+  const [templateId, setTemplateId] = useState(defaultTemplateId(productKind));
+
+  useEffect(() => {
+    setTemplateId(defaultTemplateId(productKind));
+  }, [productKind]);
 
   function toSlug(value: string) {
     return value
@@ -75,6 +89,7 @@ export function CreateClientForm({
 
     const brand = (brandName.trim() || displayName).slice(0, 120);
     const fullName = (adminFullName.trim() || `${brand} Admin`).slice(0, 120);
+    const tpl = resolveTemplate(productKind, templateId);
 
     let insertErr: { message: string; code?: string } | null = null;
     for (let attempt = 0; attempt < 8; attempt++) {
@@ -95,6 +110,9 @@ export function CreateClientForm({
             company_name: brand,
             logo_url: logoUrl.trim() || null,
             primary_color: primaryColor.trim() || "#14594c",
+            dashboard_template: tpl.id,
+            dashboard_style: tpl.style,
+            feature_flags: tpl.features,
           },
         },
       });
@@ -280,6 +298,11 @@ export function CreateClientForm({
             </p>
           ) : null}
         </div>
+        <TemplatePickerField
+          kind={productKind}
+          value={templateId}
+          onChange={setTemplateId}
+        />
       </div>
 
       {error ? <p className="mt-4 text-sm text-signal-bad">{error}</p> : null}
